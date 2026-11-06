@@ -66,6 +66,16 @@ The CSV files open directly in Excel.
 | Teamtailor | `{slug}.teamtailor.com/jobs.rss` |
 | BambooHR | `{slug}.bamboohr.com/careers/list` |
 | Breezy HR | `{slug}.breezy.hr/json` |
+| Zoho Recruit | `{slug}.zohorecruit.com/recruit/v2/public/Job_Openings` (common in Pakistan and India) |
+| Oracle Recruiting Cloud | `{host}.oraclecloud.com/hcmRestApi/.../recruitingCEJobRequisitions` (keyword search) |
+| Rippling | `api.rippling.com/platform/api/ats/v1/board/{slug}/jobs` |
+| Manatal | `careers-page.com/api/v1.0/c/{slug}/jobs/` |
+| Pinpoint | `{slug}.pinpointhq.com/postings.json` |
+
+Manatal and Pinpoint publish no posted date. For those (and any posting whose date
+is missing) the scraper remembers when it first saw each job, in `data/history.db`.
+On a board's first scan such jobs go to the "undated" file. From the next run on,
+a job that wasn't there before is dated the day it appeared.
 
 **Open job sites**: Himalayas, Arbeitnow, Jobicy, Remote OK, We Work Remotely and
 Remotive. Anyone can post on these, so their jobs need a company name, a real
@@ -86,7 +96,17 @@ after a pipe: `Sauce Labs | saucelabs`.
 
 Workday boards go in `data/workday_seeds.txt`, either as `Company | careers URL`
 (checked directly) or just `Company` (the host and site name are guessed, which
-works less often because Workday site names vary a lot).
+works less often because Workday site names vary a lot). Oracle boards go in
+`data/oracle_seeds.txt` as `Company | candidate-experience URL`.
+
+`python discover.py --from-feeds` also probes every company currently advertising a
+QA job on the open job sites, which is a good way to find employers that hire QA.
+`--skip-known` skips companies that already have a board.
+
+For systems that don't state the employer's name (Lever, Ashby, Personio, BambooHR,
+Zoho Recruit, Rippling, Manatal, Pinpoint), discover.py keeps the seed name only if
+the board's own job descriptions mention it. Otherwise the board is labelled
+`<slug> (name unverified)`, so no job is ever shown under the wrong employer.
 
 ## Layout
 

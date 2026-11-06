@@ -682,3 +682,286 @@ Jalasoft
 Bairesdev
 Nearsoft
 Sezzle
+
+# ── Milestone 3: Pakistan (software houses, product companies, banks, telecom) ──
+Systems Limited | systemsltd, systems
+Tkxel | tkxel
+NetSol Technologies | netsol, netsoltech
+TRG Pakistan | trg, trgpakistan
+Afiniti | afiniti
+10Pearls | 10pearls, tenpearls
+Arbisoft | arbisoft
+Folio3 | folio3
+VentureDive | venturedive
+Techlogix | techlogix
+Confiz | confiz
+Contour Software | contour, contoursoftware
+Emumba | emumba
+Ebryx | ebryx
+Securiti | securiti
+Motive | motive, gomotive, keeptruckin
+Devsinc | devsinc
+Cubix | cubix
+Gaditek | gaditek
+PureVPN | purevpn
+Codup | codup
+Coeus Solutions | coeus
+Nextbridge | nextbridge
+Tintash | tintash
+Sofizar | sofizar
+Rolustech | rolustech
+Synavos | synavos
+Datics | datics
+Visionet Systems | visionet
+Inbox Business Technologies | inbox
+LMKR | lmkr
+Teresol | teresol
+Jaffer Business Systems | jbs
+Techverx | techverx
+Kualitatem | kualitatem
+Mindbridge | mindbridge
+Xgrid | xgrid
+Qordata | qordata
+i2c | i2c, i2cinc
+Graana | graana
+Agency21 | agency21
+Zameen | zameen
+Daraz | daraz
+Foodpanda | foodpanda
+Bykea | bykea
+Careem | careem
+Airlift | airlift
+SadaPay | sadapay
+NayaPay | nayapay
+Abhi | abhi
+Bazaar Technologies | bazaar
+Dastgyr | dastgyr
+Retailo | retailo
+Tajir | tajir
+Jazz | jazz
+Telenor Pakistan | telenor
+Zong | zong
+Ufone | ufone
+PTCL | ptcl
+HBL | hbl
+Meezan Bank | meezanbank
+Bank Alfalah | bankalfalah
+JS Bank | jsbank
+Allied Bank | abl
+UBL | ubl
+Easypaisa | easypaisa
+JazzCash | jazzcash
+Inov8 | inov8
+Funtash | funtash
+Mindstorm Studios | mindstorm
+Frag Games | fraggames
+Big Immersive | bigimmersive
+Tapmad | tapmad
+Creative Chaos | creativechaos
+Ovex Technologies | ovex
+Programmers Force | programmersforce
+Strategic Systems International | ssi, ssidecisions
+Arpatech | arpatech
+Cressoft | cressoft
+Netrex | netrex
+Ingenious Techzoid | ingenious
+Code District | codedistrict
+Cloudways | cloudways
+Bentley Systems | bentley
+Teradata | teradata
+S&P Global Pakistan | spglobal
+Ericsson Pakistan | ericsson
+Mentor Graphics Pakistan | mentor
+Ciklum Pakistan | ciklum
+Turing Pakistan | turing
+Educative | educative
+Remotebase | remotebase
+Cogent Labs | cogentlabs
+Data Pilot | datapilot
+Antematter | antematter
+Bitsol Technologies | bitsol
+Vaival Technologies | vaival
+Alpha Squared | alphasquared
+Hashlob | hashlob
+Mobilink Bank | mobilinkbank
+Finja | finja
+KTrade | ktrade
+Keenu | keenu
+Bitlogicx | bitlogicx
+Creative Hub | creativehub
+TPS Pakistan | tps, tpsworldwide
+Avanza Solutions | avanza
+NdcTech | ndctech
+Ultimate Solutions | ultimatesolutions
+OZ Solutions | ozsolutions
+Haball | haball
+Truckistan | truckistan
+Swvl Pakistan | swvl
+
+# ── Milestone 3: India (product companies, IT services) ──
+Freshworks | freshworks
+Chargebee | chargebee
+Razorpay | razorpay
+Meesho | meesho
+Swiggy | swiggy
+Zomato | zomato
+PhonePe | phonepe
+Groww | groww
+Zerodha | zerodha
+Paytm | paytm
+PolicyBazaar | policybazaar
+Nykaa | nykaa
+Lenskart | lenskart
+Urban Company | urbancompany
+Delhivery | delhivery
+Udaan | udaan
+Cars24 | cars24
+Spinny | spinny
+OYO | oyo
+MakeMyTrip | makemytrip
+Zeta | zeta
+Pine Labs | pinelabs
+BharatPe | bharatpe
+Cashfree | cashfree
+Mobikwik | mobikwik
+Acko | acko
+Digit Insurance | digit
+Ather Energy | ather
+Rapido | rapido
+Licious | licious
+PharmEasy | pharmeasy
+Practo | practo
+HealthifyMe | healthifyme
+Dailyhunt | dailyhunt
+Glance | glance
+Gupshup | gupshup
+Yellow.ai | yellowai
+Haptik | haptik
+Uniphore | uniphore
+Observe.AI | observeai
+Darwinbox | darwinbox
+Keka | keka
+Zluri | zluri
+Rocketlane | rocketlane
+Hevo Data | hevodata
+Exotel | exotel
+MoEngage | moengage
+CleverTap | clevertap
+WebEngage | webengage
+Netcore Cloud | netcore
+Capillary Technologies | capillary
+Icertis | icertis
+Fractal Analytics | fractal
+Tiger Analytics | tigeranalytics
+LatentView | latentview
+Tredence | tredence
+Happiest Minds | happiestminds
+Sasken | sasken
+KPIT | kpit
+Tata Elxsi | tataelxsi
+Cyient | cyient
+Birlasoft | birlasoft
+Sonata Software | sonata
+Mastek | mastek
+Nagarro | nagarro
+GlobalLogic | globallogic
+Quest Global | questglobal
+Coforge | coforge
+LTIMindtree | ltimindtree
+upGrad | upgrad
+Unacademy | unacademy
+PhysicsWallah | physicswallah
+Vedantu | vedantu
+Scaler | scaler
+Simplilearn | simplilearn
+InterviewBit | interviewbit
+Hotstar | hotstar
+JioCinema | jio
+ShareChat | sharechat
+Dream11 | dream11
+MPL | mpl
+Games24x7 | games24x7
+Nazara | nazara
+Juspay | juspay
+Slice | sliceit
+Jupiter | jupiter
+CRED | cred
+InMobi | inmobi
+BrowserStack | browserstack
+LambdaTest | lambdatest
+Testsigma | testsigma
+Postman | postman
+Hasura | hasura
+Druva | druva
+Innovaccer | innovaccer
+Sprinklr | sprinklr
+Whatfix | whatfix
+MindTickle | mindtickle
+LeadSquared | leadsquared
+
+# ── Milestone 3: QA / testing companies and test-tool vendors worldwide ──
+Qualitest | qualitest
+Cigniti | cigniti
+QA Mentor | qamentor
+a1qa | a1qa
+QAwerk | qawerk
+TestFort | testfort
+Testlio | testlio
+Test IO | testio
+Applause | applause
+Global App Testing | globalapptesting
+QASource | qasource
+TestingXperts | testingxperts
+Codoid | codoid
+ThinkSys | thinksys
+360logica | 360logica
+Planit Testing | planit, planittesting
+iBeta | ibeta
+TransPerfect | transperfect
+Lionbridge | lionbridge
+PTW | ptw, ptwglobal
+Keywords Studios | keywordsstudios
+Testronic | testronic
+GlobalStep | globalstep
+VMC | vmc
+Enhance Games | enhance
+Rainforest QA | rainforestqa
+QA Wolf | qawolf
+Mabl | mabl
+Tricentis | tricentis
+SmartBear | smartbear
+Katalon | katalon
+Sauce Labs | saucelabs
+Perforce | perforce
+ACCELQ | accelq
+Leapwork | leapwork
+Functionize | functionize
+Applitools | applitools
+Testim | testim
+Virtuoso QA | virtuoso
+Momentic | momentic
+Octomind | octomind
+Checksum | checksum
+Reflect | reflect
+Ghost Inspector | ghostinspector
+Testmo | testmo
+TestRail | testrail
+Xray | xray
+Qase | qase
+BugBug | bugbug
+Bugsnag | bugsnag
+Instabug | instabug
+Crowdtest | crowdtest
+Ubertesters | ubertesters
+Testbirds | testbirds
+Digivante | digivante
+Zoonou | zoonou
+Ten10 | ten10
+Bugfinders | bugfinders
+Scott Logic | scottlogic
+Tesena | tesena
+Spritecloud | spritecloud
+Polteq | polteq
+Sogeti | sogeti
+Expleo | expleo
+Inspearit | inspearit

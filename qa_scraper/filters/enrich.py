@@ -202,7 +202,7 @@ def enrich(job: Job) -> None:
     text = f"{job.title}\n{job.description}"
     job.role_type = role_type(job.title)
     job.seniority = seniority_from(job.title)
-    job.experience = experience_from(job.description)
+    job.experience = job.experience or experience_from(job.description)
     job.tools = tools_from(text)
     job.remote_type = remote_from(job)
     offices = "; ".join(job.detail_ref.get("offices") or [])

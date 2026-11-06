@@ -42,7 +42,9 @@ def main() -> int:
     print(f"Scraping {len(boards)} company boards + {len(feeds)} job sites, "
           f"keeping QA jobs posted within {args.max_age} days ...")
 
-    res = asyncio.run(pipeline.run(boards, max_age=args.max_age, verbose=not args.quiet, feeds=feeds))
+    from qa_scraper.store import Store
+    res = asyncio.run(pipeline.run(boards, max_age=args.max_age, verbose=not args.quiet, feeds=feeds,
+                                   store=Store()))
     paths = export.write_all(res, args.max_age)
     print()
     print(paths["report"].read_text(encoding="utf-8").encode("ascii", "replace").decode())

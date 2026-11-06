@@ -7,11 +7,12 @@ Each source module exposes:
 """
 from __future__ import annotations
 
-from . import (ashby, bamboohr, breezy, greenhouse, lever, personio, recruitee, smartrecruiters, teamtailor,
-               workable, workday)
+from . import (ashby, bamboohr, breezy, greenhouse, lever, manatal, oraclehcm, personio, pinpoint, recruitee,
+               rippling, smartrecruiters, teamtailor, workable, workday, zohorecruit)
 
 SOURCES = {m.ATS: m for m in (greenhouse, lever, ashby, workday, smartrecruiters, workable, recruitee,
-                              personio, teamtailor, bamboohr, breezy)}
+                              personio, teamtailor, bamboohr, breezy, zohorecruit, oraclehcm, rippling,
+                              manatal, pinpoint)}
 
 
 def get(ats: str):

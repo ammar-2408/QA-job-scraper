@@ -39,8 +39,14 @@ PUBLIC_URL = {
     "teamtailor": "https://{token}.teamtailor.com/jobs",
     "bamboohr": "https://{token}.bamboohr.com/careers",
     "breezy": "https://{token}.breezy.hr/",
+    "zohorecruit": "https://{token}.zohorecruit.com/jobs/Careers",
+    "rippling": "https://ats.rippling.com/{token}/jobs",
+    "manatal": "https://www.careers-page.com/{token}",
+    "pinpoint": "https://{token}.pinpointhq.com/",
 }
-SYSTEMS = list(PUBLIC_URL) + ["workday"]
+SYSTEMS = list(PUBLIC_URL) + ["workday", "oraclehcm"]
+ORACLE_SEEDS = config.DATA_DIR / "oracle_seeds.txt"
+ORACLE_URL = re.compile(r"https?://([a-z0-9.-]+\.oraclecloud\.com)/hcmUI/CandidateExperience/[a-z-]+/sites/([A-Za-z0-9_]+)")
 
 # Workday data centres seen in the wild. A wrong host/tenant answers 422; a right
 # tenant with a wrong site answers 404, so the host is found cheaply first.
@@ -123,6 +129,7 @@ async def probe(http: Http, ats: str, name: str, slug: str):
 # Systems whose feed states the employer's name. For the others the name is only our
 # seed guess, and a generic slug ("neon", "test", "arc") may belong to another company.
 NAMED_BY_SYSTEM = ("greenhouse", "workable", "recruitee", "teamtailor", "breezy", "smartrecruiters")
+# (zohorecruit, rippling, manatal, pinpoint, lever, ashby, personio, bamboohr: name is our guess -> verified)
 _NAME_STOP = {"the", "inc", "ltd", "llc", "labs", "ai", "io", "hq", "group", "software", "technologies", "co"}
 
 
@@ -167,7 +174,7 @@ async def find_workday(http: Http, name: str, slugs: list[str], sem: asyncio.Sem
     return None
 
 
-async def discover(seeds, systems, wd_urls) -> list[dict]:
+async def discover(seeds, systems, wd_urls, oracle_urls=()) -> list[dict]:
     found: list[dict] = []
 
     def report(row, name):
@@ -181,8 +188,8 @@ async def discover(seeds, systems, wd_urls) -> list[dict]:
         async def one_company(name, explicit):
             slugs = slugs_for(name, explicit)
             for ats in systems:
-                if ats == "workday":
-                    continue                # Workday comes from workday_seeds.txt only (see below)
+                if ats in ("workday", "oraclehcm"):
+                    continue                # these come from their own seed files (see below)
                 for slug in slugs:
                     row = await probe(http, ats, name, slug)
                     if row:
@@ -203,8 +210,21 @@ async def discover(seeds, systems, wd_urls) -> list[dict]:
             if n:
                 report(_row(name, "workday", tenant, n, host=host, site=site, url=f"https://{host}/{site}"), name)
 
+        async def one_oracle(name, url):
+            m = ORACLE_URL.match(url)
+            if not m:
+                return
+            host, site = m.groups()
+            board = Board(company=name, ats="oraclehcm", token=host.split(".")[0], host=host, site=site)
+            data = await http.get_json(sources.oraclehcm._list_url(board, "", 0))
+            items = (data or {}).get("items") or []
+            n = items[0].get("TotalJobsCount") if items else 0
+            if n:
+                report(_row(name, "oraclehcm", board.token, n, host=host, site=site, url=url), name)
+
         await asyncio.gather(*(one_company(n, s) for n, s in seeds),
-                             *(one_wd_url(n, u) for n, u in wd_urls))
+                             *(one_wd_url(n, u) for n, u in wd_urls),
+                             *(one_oracle(n, u) for n, u in oracle_urls))
     return found
 
 
@@ -224,10 +244,54 @@ def read_workday_seeds(path) -> list[tuple[str, str]]:
     return out
 
 
+async def companies_from_feeds() -> list[str]:
+    """Names of employers advertising QA roles on the open job sites (last 60 days)."""
+    from qa_scraper.feeds import FEEDS
+    from qa_scraper.filters import qa_match
+    async with Http() as http:
+        results = await asyncio.gather(*(f.fetch(http, 60) for f in FEEDS.values()))
+    names = []
+    for jobs in results:
+        for j in jobs or []:
+            c = (j.company or "").strip()
+            if c and qa_match.title_candidate(j.title) and c not in names and len(c) <= 60:
+                names.append(c)
+    return names
+
+
+async def prune() -> int:
+    """Drop boards that are gone, empty, or (Pinpoint) only serve demo postings."""
+    rows = read_boards()
+    print(f"Re-checking {len(rows)} boards ...")
+    dead: list[str] = []
+    async with Http() as http:
+        async def one(key, r):
+            src = sources.get(r["ats"])
+            if r["ats"] == "smartrecruiters":
+                ok = await probe(http, "smartrecruiters", r["company"], r["token"])
+            elif r["ats"] == "workday":
+                ok = await _wd_count(http, r["host"], r["token"], r["site"])
+            else:
+                ok = await src.list_jobs(http, Board(company=r["company"], ats=r["ats"], token=r["token"],
+                                                     host=r.get("host", ""), site=r.get("site", "")))
+            if not ok:
+                dead.append(key)
+        await asyncio.gather(*(one(k, r) for k, r in rows.items()))
+    for k in dead:
+        print(f"  - {k} ({rows[k]['company']})".encode("ascii", "replace").decode())
+        rows.pop(k)
+    write_boards(rows)
+    unverified = sum(1 for r in rows.values() if "(name unverified)" in r["company"])
+    print(f"Removed {len(dead)}. boards.csv: {len(rows)} boards "
+          f"({len(rows) - unverified} with a verified company name, {unverified} unverified)")
+    return 0
+
+
 async def reverify_names() -> int:
     rows = read_boards()
     todo = [r for r in rows.values()
-            if r["ats"] not in NAMED_BY_SYSTEM and r["ats"] != "workday" and "(name unverified)" not in r["company"]]
+            if r["ats"] not in NAMED_BY_SYSTEM and r["ats"] not in ("workday", "oraclehcm")
+            and "(name unverified)" not in r["company"]]
     print(f"Re-checking names of {len(todo)} boards ...")
     changed = 0
     async with Http() as http:
@@ -255,11 +319,17 @@ def main() -> int:
     ap.add_argument("--ats", help=f"comma-separated systems to probe (default all: {', '.join(SYSTEMS)})")
     ap.add_argument("--skip-known", action="store_true",
                     help="don't re-probe companies that already have a board in boards.csv")
+    ap.add_argument("--from-feeds", action="store_true",
+                    help="also probe every company currently advertising a QA job on the open job sites")
     ap.add_argument("--verify-names", action="store_true",
                     help="re-check company names of existing boards whose system doesn't state them")
+    ap.add_argument("--prune", action="store_true",
+                    help="re-check every board in boards.csv and remove those that no longer return real jobs")
     args = ap.parse_args()
     if args.verify_names:
         return asyncio.run(reverify_names())
+    if args.prune:
+        return asyncio.run(prune())
 
     systems = [a.strip() for a in args.ats.split(",")] if args.ats else SYSTEMS
     seeds = read_seeds(args.seeds)
@@ -267,11 +337,17 @@ def main() -> int:
     if args.skip_known:
         known = {r["company"].lower() for r in rows.values()}
         seeds = [(n, s) for n, s in seeds if n.lower() not in known]
+    if args.from_feeds:
+        extra = asyncio.run(companies_from_feeds())
+        have = {n.lower() for n, _ in seeds}
+        seeds += [(n, []) for n in extra if n.lower() not in have]
+        print(f"+ {len(extra)} companies hiring QA on the open job sites")
     wd_urls = read_workday_seeds(WORKDAY_SEEDS) if "workday" in systems else []
+    oracle_urls = read_workday_seeds(ORACLE_SEEDS) if "oraclehcm" in systems else []
     print(f"Probing {len(seeds)} companies on {', '.join(systems)}"
           + (f" + {len(wd_urls)} Workday URLs" if wd_urls else "") + " ...")
     t0 = time.time()
-    found = asyncio.run(discover(seeds, systems, wd_urls))
+    found = asyncio.run(discover(seeds, systems, wd_urls, oracle_urls))
     before = len(rows)
     for r in found:
         rows[f"{r['ats']}:{r['token']}".lower()] = r

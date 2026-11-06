@@ -1,0 +1,4 @@
+# Oracle Recruiting Cloud boards for discover.py: "Company | candidate-experience URL".
+# The URL is the company's public job site: https://<host>.oraclecloud.com/hcmUI/CandidateExperience/en/sites/<site>
+JPMorgan Chase | https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001
+Oracle | https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_45001

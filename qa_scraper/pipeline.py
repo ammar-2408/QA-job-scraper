@@ -34,6 +34,7 @@ class RunResult:
     counts: Counter = field(default_factory=Counter)
     duplicates_merged: int = 0
     seconds: float = 0.0
+    store: object = None                                  # store.Store / NullStore
 
 
 def load_boards(path=None) -> list[Board]:
@@ -51,11 +52,13 @@ def load_boards(path=None) -> list[Board]:
 
 
 async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: BoardResult,
-                       keep_all_titles: bool) -> None:
+                       keep_all_titles: bool, board_known: bool = False) -> None:
     tier = qa_match.title_candidate(job.title)
     if not tier and not keep_all_titles:
         res.counts["not_qa_title"] += 1
         return
+    prior_first_seen = res.store.first_seen(job.identity())
+    res.store.record(job)               # every QA-titled job, whatever its age
     freshness.stamp(job)
     if job.days_old is not None and job.days_old > max_age:
         res.counts["too_old"] += 1
@@ -63,6 +66,16 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     # Detail page: full description, and for some systems (BambooHR) the only posted date.
     if src is not None and hasattr(src, "fill_detail") and (not job.description or job.days_old is None):
         await src.fill_detail(http, job)
+        freshness.stamp(job)
+        if job.days_old is not None and job.days_old > max_age:
+            res.counts["too_old"] += 1
+            return
+    # No date from the source at all: fall back to first-seen tracking.
+    if job.days_old is None:
+        if prior_first_seen:
+            job.posted_date, job.date_source = prior_first_seen, "first_seen"
+        elif board_known:
+            job.posted_date, job.date_source = res.store.today, "first_seen"
         freshness.stamp(job)
         if job.days_old is not None and job.days_old > max_age:
             res.counts["too_old"] += 1
@@ -104,8 +117,10 @@ async def _scrape_board(http: Http, board: Board, max_age: int, res: RunResult,
                 br.ok = True
                 br.total_jobs = len(jobs)
                 res.counts["jobs_seen"] += len(jobs)
-                await asyncio.gather(*(_process_job(http, src, j, max_age, res, br, keep_all_titles)
+                known = res.store.board_known_before_today(board.key)
+                await asyncio.gather(*(_process_job(http, src, j, max_age, res, br, keep_all_titles, known)
                                        for j in jobs))
+                res.store.mark_board(board.key)
         except Exception as e:  # one broken board must never stop the run
             br.error = f"{type(e).__name__}: {e}"[:300]
     br.seconds = round(time.time() - t0, 1)
@@ -125,7 +140,9 @@ async def _scrape_feed(http: Http, feed, max_age: int, res: RunResult, progress)
             br.ok = True
             br.total_jobs = len(jobs)
             res.counts["jobs_seen"] += len(jobs)
-            await asyncio.gather(*(_process_job(http, None, j, max_age, res, br, False) for j in jobs))
+            known = res.store.board_known_before_today(board.key)
+            await asyncio.gather(*(_process_job(http, None, j, max_age, res, br, False, known) for j in jobs))
+            res.store.mark_board(board.key)
     except Exception as e:
         br.error = f"{type(e).__name__}: {e}"[:300]
     br.seconds = round(time.time() - t0, 1)
@@ -170,11 +187,13 @@ def _dedupe(jobs: list[Job]) -> tuple[list[Job], int]:
 
 
 async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: bool = False,
-              verbose: bool = True, feeds: list | None = None) -> RunResult:
+              verbose: bool = True, feeds: list | None = None, store=None) -> RunResult:
     """Scrape `boards` (company job boards) and `feeds` (open job-site modules)."""
     max_age = config.MAX_AGE_DAYS if max_age is None else max_age
     feeds = feeds or []
     res = RunResult()
+    from .store import NullStore
+    res.store = store if store is not None else NullStore()
     t0 = time.time()
     done = [0]
     total = len(boards) + len(feeds)
@@ -190,6 +209,7 @@ async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: 
         await asyncio.gather(*(_scrape_board(http, b, max_age, res, keep_all_titles, progress) for b in boards),
                              *(_scrape_feed(http, f, max_age, res, progress) for f in feeds))
         res.counts["http_errors"] = len(http.errors)
+    res.store.close()
 
     res.kept, m0 = _drop_aggregator_copies(res.kept)
     res.kept, m1 = _dedupe(res.kept)

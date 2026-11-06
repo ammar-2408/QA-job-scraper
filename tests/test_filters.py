@@ -167,5 +167,14 @@ class TestLegitimacy(unittest.TestCase):
         self.assertEqual(j.trust, "aggregator_verified")
 
 
+class TestPinpointDemo(unittest.TestCase):
+    def test_demo_board_detected(self):
+        from qa_scraper.sources.pinpoint import _is_demo
+        self.assertTrue(_is_demo(["Customer Service Rep", "Head of DEI - UK", "Marketing Executive", "Marketing Manager"]))
+        self.assertTrue(_is_demo(["Head of DEI - Newcastle", "Head of DEI - US", "Customer Service Rep"]))
+        self.assertFalse(_is_demo(["QA Engineer", "Marketing Manager"]))
+        self.assertFalse(_is_demo([]))
+
+
 if __name__ == "__main__":
     unittest.main()
