@@ -1,0 +1,464 @@
+# Seed companies for discover.py. One per line: "Company Name" or "Company Name | slug1, slug2".
+# Names are guesses; discover.py only keeps boards that actually respond with jobs.
+
+# ── Dev tools / infrastructure / cloud ──
+GitLab
+Cloudflare
+Datadog
+MongoDB
+Elastic
+Twilio
+Okta
+HashiCorp
+Vercel
+Netlify
+Supabase
+PlanetScale
+Postman
+Sentry
+PagerDuty
+New Relic
+Grafana Labs
+Snyk
+CircleCI
+JFrog
+Docker
+Fastly
+DigitalOcean
+Confluent
+Cockroach Labs
+Redis
+Temporal | temporaltechnologies
+Retool
+Linear
+Replit
+Sourcegraph
+LaunchDarkly
+Harness | harnessinc
+BrowserStack
+Sauce Labs
+LambdaTest
+Mabl
+Testim
+Applitools
+Tricentis
+SmartBear
+Katalon
+Rainforest QA
+QA Wolf
+Cypress | cypressio
+Checkly
+Kong
+Airbyte
+dbt Labs
+Fivetran
+Hightouch
+Segment
+Amplitude
+Mixpanel
+Heap
+PostHog
+Statsig
+ClickHouse
+Neon
+Render
+Fly.io | flyio
+Railway
+Cursor | anysphere
+Codeium
+Tabnine
+JetBrains
+Atlassian
+Asana
+Notion
+Airtable
+Figma
+Miro
+Canva
+Loom
+Calendly
+Zapier
+Webflow
+Squarespace
+Wix
+HubSpot
+Intercom
+Zendesk
+Freshworks
+Gorgias
+Front
+Dropbox
+Box
+DocuSign
+Smartsheet
+Monday.com | mondaycom
+ClickUp
+Coda
+Grammarly
+Duolingo
+
+# ── Fintech ──
+Stripe
+Plaid
+Brex
+Ramp
+Mercury
+Chime
+Affirm
+Robinhood
+Coinbase
+Kraken | kraken.com
+Gemini
+Chainalysis
+Wise
+Revolut
+Monzo
+N26
+Klarna
+Adyen
+Checkout.com | checkoutcom
+Marqeta
+Gusto
+Rippling
+Deel
+Remote | remotecom
+Papaya Global
+Carta
+Bolt
+Toast
+Square | square
+Block
+SoFi
+Nubank
+Payoneer
+Paysafe
+Airwallex
+Tide
+Starling Bank
+Moniepoint
+Flutterwave
+Paystack
+Chipper Cash
+Razorpay
+Zepz
+Upgrade
+Betterment
+Wealthfront
+Alpaca
+Anchorage Digital
+Fireblocks
+Ledger
+Consensys
+OpenSea
+Uniswap Labs
+Circle
+Ripple
+Binance
+
+# ── Consumer / marketplaces / mobility ──
+Airbnb
+Lyft
+Instacart
+DoorDash
+Pinterest
+Reddit
+Discord
+Snap
+Spotify
+Peloton
+Strava
+Calm
+Headspace
+Hinge
+Bumble
+Grindr
+Etsy
+Poshmark
+Faire
+Whatnot
+Vinted
+Zalando
+Delivery Hero
+Glovo
+Bolt Food
+Careem
+Talabat
+Uber
+Grab
+Gojek
+Rappi
+Getir
+Wolt
+Just Eat Takeaway
+Booking.com
+Skyscanner
+GetYourGuide
+Hopper
+Trivago
+Zillow
+Redfin
+Opendoor
+Compass
+
+# ── AI / data ──
+OpenAI
+Anthropic
+Scale AI | scaleai
+Databricks
+Snowflake
+Hugging Face
+Cohere
+Mistral AI
+Perplexity
+Runway
+Character.AI | character
+ElevenLabs
+Synthesia
+DeepL
+Weights & Biases | wandb
+Pinecone
+Weaviate
+Glean
+Harvey
+Jasper
+Writer
+Abridge
+Hebbia
+Sierra
+Decagon
+Clay
+Cresta
+Gong
+Outreach
+Salesloft
+Apollo.io | apolloio
+
+# ── Security ──
+CrowdStrike
+SentinelOne
+Wiz | wizinc
+Tanium
+1Password
+Bitwarden
+Vanta
+Drata
+Arctic Wolf
+Abnormal Security
+Huntress
+Rapid7
+Tenable
+Lookout
+Netskope
+Zscaler
+Cato Networks
+Snyk
+Socure
+Persona
+Onfido
+Sumsub
+Jumio
+
+# ── Gaming ──
+Epic Games
+Riot Games
+Roblox
+Unity | unity3d
+Niantic
+Discord
+Supercell
+Rovio
+King
+Zynga
+Scopely
+Playtika
+Jam City
+Kabam
+Bungie
+Blizzard
+Ubisoft
+Electronic Arts
+Respawn
+Bethesda
+Insomniac
+Naughty Dog
+Sony Interactive Entertainment
+Keywords Studios
+PTW
+Testronic
+Lionbridge Games
+Moon Active
+Plarium
+Miniclip
+Wargaming
+Paradox Interactive
+Embark Studios
+Mojang
+CD Projekt Red
+Frontier Developments
+Jagex
+Sumo Digital
+Team17
+Creative Assembly
+Rockstar Games
+2K
+Gearbox
+Netmarble
+Krafton
+Garena
+
+# ── Health tech ──
+Oscar Health
+Hims & Hers | hims
+Ro
+Zocdoc
+Noom
+Flo Health
+Babylon
+Doctolib
+Kry
+Teladoc
+Spring Health
+Lyra Health
+Headway
+Cerebral
+Tempus
+Komodo Health
+Color
+Omada Health
+Virta Health
+
+# ── Ed tech ──
+Coursera
+Udemy
+Chegg
+Quizlet
+Khan Academy
+Brilliant
+Masterclass
+Outschool
+Preply
+Babbel
+Busuu
+GoStudent
+Kahoot
+ClassDojo
+Byju's
+Unacademy
+Emeritus
+
+# ── Software services / outsourcing / QA companies (global) ──
+Thoughtworks
+EPAM
+Globant
+Endava
+Andela
+Turing
+Toptal
+X-Team
+10up
+Automattic
+Toggl
+Doist
+Buffer
+Hotjar
+Wildbit
+Zapier
+Help Scout
+Basecamp
+GitHub
+Mozilla
+Wikimedia
+Canonical
+Red Hat
+SUSE
+Proton
+Nextcloud
+Tailscale
+Mattermost
+Rocket.Chat
+Ghost
+Elastic
+Grafana
+Kinsta
+Toptal
+Arc
+Crossover
+Lemon.io
+BairesDev
+Scalable Path
+Gun.io
+Ciklum
+SoftServe
+N-iX
+Intellias
+DataArt
+Luxoft
+Sigma Software
+Netguru
+STX Next
+10Clouds
+Miquido
+Brainhub
+Railsware
+MacPaw
+Grammarly
+Preply
+Readdle
+Devsinc
+Arbisoft
+Systems Limited
+10Pearls
+Tkxel
+Netsol
+Folio3
+VentureDive
+Motive
+Careem
+Bazaar Technologies
+Tajir
+Airlift
+Sadapay
+Zameen
+Rozee
+Contour Software
+Emumba
+Securiti
+Afiniti
+Confiz
+Cubix
+Techlogix
+i2c
+Infotech
+Qordata
+Xgrid
+Educative
+Tintash
+Freshworks
+Zoho
+Postman
+BrowserStack
+Chargebee
+Druva
+Hasura
+Razorpay
+CRED
+Meesho
+Swiggy
+Zomato
+PhonePe
+Groww
+Zerodha
+Ola
+Dunzo
+ShareChat
+Dream11
+InMobi
+Juspay
+Slice
+Jupiter
+Atlan
+Sprinklr
+Innovaccer
+MindTickle
+Whatfix
+Leadsquared
