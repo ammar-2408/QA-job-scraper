@@ -49,6 +49,7 @@ class Job:
     trust: str = ""              # company_ats | aggregator_verified | flagged
     trust_reasons: str = ""
     qa_match: str = ""           # why it was classified as QA
+    category: str = ""           # kept | undated | flagged (set by the pipeline)
 
     # Source-specific details used during the run, not exported.
     detail_ref: dict = field(default_factory=dict, repr=False)

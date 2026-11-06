@@ -1,0 +1,62 @@
+# Runs the scraper. Started by the website's Run button (workflow_dispatch through the
+# GitHub API), or by hand from the Actions tab / `gh workflow run scrape.yml`.
+name: scrape
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "runs row created by the website (empty = new run)"
+        required: false
+        default: ""
+      mode:
+        description: "full | quick | feeds"
+        required: false
+        default: "full"
+      max_age:
+        description: "max posting age in days"
+        required: false
+        default: "7"
+
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+      RUN_ID: ${{ inputs.run_id }}
+      MODE: ${{ inputs.mode }}
+      MAX_AGE: ${{ inputs.max_age }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Scrape
+        run: |
+          args="--mode ${MODE:-full} --max-age ${MAX_AGE:-7} --trigger website --quiet"
+          if [ -n "$RUN_ID" ]; then args="$args --run-id $RUN_ID"; else args="${args/website/manual}"; fi
+          python run.py $args
+      - name: Mark run failed
+        if: failure() && inputs.run_id != ''
+        run: python -m qa_scraper.store status "$RUN_ID" failed "scraper crashed, see GitHub Actions log"
+      - name: Mark run cancelled
+        if: cancelled() && inputs.run_id != ''
+        run: python -m qa_scraper.store status "$RUN_ID" cancelled "cancelled on GitHub"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: run-output-${{ github.run_id }}
+          path: output/
+          retention-days: 7
+          if-no-files-found: ignore

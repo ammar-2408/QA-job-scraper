@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA Job Finder</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/css/tabulator.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/js/tabulator.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1a1d23; --muted: #5f6673; --line: #e3e6eb; --hover: #f1f4f8;
+  --accent: #2563eb; --accent-text: #ffffff; --new: #15803d; --new-bg: #dcfce7; --closed: #9a3412; --closed-bg: #ffedd5;
+  --warn: #b45309; --bad: #b91c1c; --chip: #eef2f7; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --panel: #171a21; --text: #e6e8ec; --muted: #9aa1ad; --line: #2a2f3a; --hover: #1e222b;
+    --accent: #3b82f6; --accent-text: #ffffff; --new: #4ade80; --new-bg: #14321f; --closed: #fdba74; --closed-bg: #3a2414;
+    --warn: #fbbf24; --bad: #f87171; --chip: #232833; --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --panel: #171a21; --text: #e6e8ec; --muted: #9aa1ad; --line: #2a2f3a; --hover: #1e222b;
+  --accent: #3b82f6; --accent-text: #ffffff; --new: #4ade80; --new-bg: #14321f; --closed: #fdba74; --closed-bg: #3a2414;
+  --warn: #fbbf24; --bad: #f87171; --chip: #232833; --shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, select, input { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.wrap { max-width: 1600px; margin: 0 auto; padding: 16px; }
+header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+header h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+header .sub { color: var(--muted); font-size: 13px; }
+nav { display: flex; gap: 4px; margin-left: auto; }
+nav button, .btn { border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; border-radius: 8px;
+  cursor: pointer; }
+nav button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.danger { color: var(--bad); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+  padding: 14px; margin-bottom: 14px; }
+.runbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.runbar label { color: var(--muted); font-size: 13px; display: flex; gap: 6px; align-items: center; }
+select, input[type=text], input[type=search], input[type=password] { border: 1px solid var(--line);
+  background: var(--panel); border-radius: 8px; padding: 6px 9px; min-height: 34px; }
+.progress { flex: 1 1 320px; min-width: 240px; }
+.track { height: 8px; background: var(--chip); border-radius: 99px; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--accent); transition: width .6s ease; }
+.pmeta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted);
+  margin-top: 5px; flex-wrap: wrap; }
+.stats { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 12px; }
+.stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12.5px; }
+.filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; align-items: end; }
+.filters .search { grid-column: span 2; }
+.filters label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+.filters label > * { color: var(--text); }
+.check { flex-direction: row !important; align-items: center; gap: 6px !important; min-height: 34px; }
+.toolbar { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; flex-wrap: wrap; }
+.toolbar .count { color: var(--muted); margin-right: auto; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px;
+  margin-right: 5px; vertical-align: 1px; }
+.b-new { background: var(--new-bg); color: var(--new); }
+.b-closed { background: var(--closed-bg); color: var(--closed); }
+.b-undated { background: var(--chip); color: var(--muted); }
+.b-flag { background: var(--closed-bg); color: var(--bad); }
+.ok { color: var(--new); } .fail { color: var(--bad); }
+.muted { color: var(--muted); }
+.hidden { display: none !important; }
+.msg { padding: 9px 12px; border-radius: 8px; background: var(--chip); margin-top: 10px; font-size: 13px; }
+.msg.err { background: var(--closed-bg); color: var(--bad); }
+
+/* Tabulator, themed with the tokens above */
+.tabulator { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.tabulator .tabulator-header { background: var(--panel); color: var(--muted); border-bottom: 1px solid var(--line); }
+.tabulator .tabulator-header .tabulator-col { background: var(--panel); border-right: 1px solid var(--line); }
+.tabulator .tabulator-header .tabulator-col:hover { background: var(--hover) !important; }
+.tabulator .tabulator-tableholder { background: var(--panel); }
+.tabulator-row { background: var(--panel); color: var(--text); border-bottom: 1px solid var(--line); cursor: pointer; }
+.tabulator-row.tabulator-row-even { background: var(--panel); }
+.tabulator-row.tabulator-selectable:hover, .tabulator-row:hover { background: var(--hover) !important; }
+.tabulator-row .tabulator-cell { border-right: none; padding: 7px 8px; }
+.tabulator .tabulator-footer { background: var(--panel); color: var(--muted); border-top: 1px solid var(--line); }
+.tabulator .tabulator-footer .tabulator-page { background: var(--panel); color: var(--text); border-color: var(--line); }
+.tabulator .tabulator-footer .tabulator-page.active { color: var(--accent); }
+.tabulator .tabulator-col-sorter .tabulator-arrow { border-bottom-color: var(--muted) !important; }
+.tabulator-row.closed { opacity: .62; }
+.tabulator .tabulator-placeholder span { color: var(--muted) !important; }
+.title-cell { font-weight: 600; }
+
+/* detail drawer */
+.drawer-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(720px, 100%); background: var(--panel);
+  border-left: 1px solid var(--line); z-index: 21; overflow-y: auto; padding: 20px 22px 40px; box-shadow: var(--shadow); }
+.drawer h2 { margin: 0 0 4px; font-size: 19px; }
+.drawer .co { color: var(--muted); margin-bottom: 12px; }
+.drawer dl { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; margin: 14px 0; font-size: 13px; }
+.drawer dt { color: var(--muted); }
+.drawer dd { margin: 0; word-break: break-word; }
+.drawer .desc { white-space: pre-wrap; border-top: 1px solid var(--line); padding-top: 14px; font-size: 13.5px; }
+.drawer .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.drawer .close { position: absolute; top: 14px; right: 14px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 18px; }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+@media (max-width: 700px) {
+  .filters .search { grid-column: span 1; }
+  .drawer dl { grid-template-columns: 1fr; }
+  nav { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>QA Job Finder</h1>
+      <div class="sub">Software QA and testing jobs from company job boards and open job sites</div>
+    </div>
+    <nav>
+      <button data-tab="jobs" class="on">Jobs</button>
+      <button data-tab="boards">Boards</button>
+      <button data-tab="runs">Run history</button>
+      <button id="theme" title="Switch light / dark">&#9680;</button>
+    </nav>
+  </header>
+
+  <section class="panel">
+    <div class="runbar">
+      <label>Run
+        <select id="mode">
+          <option value="full">Full: every board + job sites</option>
+          <option value="quick">Quick: active boards + job sites</option>
+          <option value="feeds">Job sites only</option>
+        </select>
+      </label>
+      <label>Posted within
+        <select id="maxage">
+          <option>1</option><option>3</option><option selected>7</option><option>14</option><option>30</option>
+        </select> days
+      </label>
+      <button class="btn primary" id="runBtn">Run now</button>
+      <button class="btn danger hidden" id="cancelBtn">Cancel run</button>
+      <div class="progress">
+        <div class="track"><div class="fill" id="fill"></div></div>
+        <div class="pmeta"><span id="pText">Loading...</span><span id="pTime"></span></div>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="runMsg" class="msg hidden"></div>
+  </section>
+
+  <section id="tab-jobs">
+    <div class="panel">
+      <div class="filters">
+        <label class="search">Search title, company, description, tools
+          <input type="search" id="q" placeholder="e.g. Playwright, fintech, Lahore">
+        </label>
+        <label>Posted within
+          <select id="fAge"><option value="1">1 day</option><option value="3">3 days</option>
+            <option value="7" selected>7 days</option><option value="14">14 days</option>
+            <option value="30">30 days</option><option value="">Any time</option></select>
+        </label>
+        <label>Status
+          <select id="fStatus"><option value="open" selected>Open</option><option value="new">New this run</option>
+            <option value="closed">Closed (last 30 days)</option><option value="all">All</option></select>
+        </label>
+        <label>Country <select id="fCountry"><option value="">All</option></select></label>
+        <label>Work type <select id="fRemote"><option value="">All</option></select></label>
+        <label>Role type <select id="fRole"><option value="">All</option></select></label>
+        <label>Seniority <select id="fSeniority"><option value="">All</option></select></label>
+        <label>Tool <select id="fTool"><option value="">All</option></select></label>
+        <label>Source <select id="fSource"><option value="">All</option></select></label>
+        <label>Trust
+          <select id="fTrust"><option value="">Trusted (default)</option><option value="company_ats">Company boards only</option>
+            <option value="aggregator_verified">Open job sites only</option><option value="flagged">Flagged only</option></select>
+        </label>
+        <label class="check"><input type="checkbox" id="fUndated"> Include undated</label>
+      </div>
+      <div class="toolbar">
+        <span class="count" id="count"></span>
+        <button class="btn" id="resetBtn">Reset filters</button>
+        <button class="btn" id="xlsxBtn">Export Excel</button>
+        <button class="btn" id="csvBtn">Export CSV</button>
+      </div>
+    </div>
+    <div id="jobsTable"></div>
+  </section>
+
+  <section id="tab-boards" class="hidden">
+    <div class="panel toolbar" style="margin-top:0">
+      <input type="search" id="bq" placeholder="Filter boards by company or system" style="flex:1;min-width:220px">
+      <select id="bStatus"><option value="">All boards</option><option value="ok">Working</option>
+        <option value="failed">Failed</option><option value="qa">Had QA jobs</option></select>
+      <span class="count" id="bCount"></span>
+    </div>
+    <div id="boardsTable"></div>
+  </section>
+
+  <section id="tab-runs" class="hidden">
+    <div id="runsTable"></div>
+  </section>
+</div>
+
+<div id="drawerBg" class="drawer-bg hidden"></div>
+<aside id="drawer" class="drawer hidden" aria-label="Job details"></aside>
+
+<dialog id="pwDialog">
+  <form method="dialog" id="pwForm">
+    <div style="font-weight:600;margin-bottom:8px">Password</div>
+    <div class="muted" style="font-size:13px;margin-bottom:10px">Starting or cancelling a run needs the password.
+      This browser will remember it.</div>
+    <input type="password" id="pwInput" autocomplete="current-password" style="width:100%">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn primary" value="ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const SOURCE_NAMES = { greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby", workday: "Workday",
+  smartrecruiters: "SmartRecruiters", workable: "Workable", recruitee: "Recruitee", personio: "Personio",
+  teamtailor: "Teamtailor", bamboohr: "BambooHR", breezy: "Breezy", zohorecruit: "Zoho Recruit",
+  oraclehcm: "Oracle HCM", rippling: "Rippling", manatal: "Manatal", pinpoint: "Pinpoint",
+  himalayas: "Himalayas", arbeitnow: "Arbeitnow", jobicy: "Jobicy", remoteok: "Remote OK",
+  weworkremotely: "We Work Remotely", remotive: "Remotive", feed: "Job site" };
+const srcName = (s) => SOURCE_NAMES[s] || s || "";
+
+// ---------- theme ----------
+(function () {
+  const t = store.get("theme");
+  if (t) document.documentElement.dataset.theme = t;
+  $("#theme").onclick = () => {
+    const dark = document.documentElement.dataset.theme
+      ? document.documentElement.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.dataset.theme = dark ? "light" : "dark";
+    store.set("theme", document.documentElement.dataset.theme);
+  };
+})();
+
+// ---------- api ----------
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  let body = null;
+  try { body = await r.json(); } catch (e) {}
+  if (!r.ok) { const err = new Error((body && body.detail) || `HTTP ${r.status}`); err.status = r.status; throw err; }
+  return body;
+}
+
+// ---------- state ----------
+let config = { password_required: false, runner: "none" };
+let latestRunId = null, today = new Date().toISOString().slice(0, 10);
+let searchIds = null, searchTerm = "", lastRunStatus = null, wasActive = false;
+
+function daysOld(d) {
+  if (!d) return null;
+  const n = Math.round((Date.parse(today) - Date.parse(d.slice(0, 10))) / 86400000);
+  return Math.max(0, n);
+}
+
+// ---------- jobs table ----------
+const badges = (r) => {
+  let b = "";
+  if (r.status === "closed") b += '<span class="badge b-closed">Closed</span>';
+  else if (r.first_run_id && r.first_run_id === latestRunId) b += '<span class="badge b-new">NEW</span>';
+  if (r.category === "undated") b += '<span class="badge b-undated">Undated</span>';
+  if (r.category === "flagged") b += '<span class="badge b-flag">Flagged</span>';
+  return b;
+};
+const jobsTable = new Tabulator("#jobsTable", {
+  layout: "fitColumns", height: "calc(100vh - 120px)", placeholder: "No jobs match these filters",
+  index: "identity", pagination: false, renderVertical: "virtual",
+  initialSort: [{ column: "posted_date", dir: "desc" }],
+  rowFormatter: (row) => row.getElement().classList.toggle("closed", row.getData().status === "closed"),
+  columns: [
+    { title: "Title", field: "title", minWidth: 240, widthGrow: 3, cssClass: "title-cell",
+      formatter: (c) => badges(c.getData()) + esc(c.getValue()) },
+    { title: "Company", field: "company", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
+    { title: "Location", field: "location", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
+    { title: "Type", field: "remote_type", width: 90 },
+    { title: "Seniority", field: "seniority", width: 105 },
+    { title: "Role", field: "role_type", width: 130, formatter: (c) => esc(c.getValue()) },
+    { title: "Tools", field: "tools", minWidth: 120, widthGrow: 1, formatter: (c) => esc(c.getValue()) },
+    { title: "Salary", field: "salary", width: 120, formatter: (c) => esc(c.getValue()) },
+    { title: "Posted", field: "posted_date", width: 108, sorter: (a, b, ra, rb) => {
+        const x = a || "", y = b || "";
+        if (x !== y) return x < y ? -1 : 1;
+        return (ra.getData().first_seen || "") < (rb.getData().first_seen || "") ? -1 : 1; } },
+    { title: "Days", field: "_days", width: 70, hozAlign: "right", sorter: "number",
+      formatter: (c) => c.getValue() ?? "" },
+    { title: "Source", field: "source", width: 120, formatter: (c) => esc(srcName(c.getValue())) },
+    { title: "Trust", field: "trust", width: 105, formatter: (c) => ({ company_ats: "Company board",
+        aggregator_verified: "Job site", flagged: '<span class="fail">Flagged</span>' })[c.getValue()] || "" },
+  ],
+});
+jobsTable.on("rowClick", (e, row) => openDrawer(row.getData().identity));
+jobsTable.on("dataFiltered", (f, rows) => {
+  $("#count").textContent = `${rows.length.toLocaleString()} jobs shown`;
+});
+
+function jobFilter(r) {
+  const st = $("#fStatus").value;
+  if (st === "open" && r.status !== "open") return false;
+  if (st === "closed" && r.status !== "closed") return false;
+  if (st === "new" && !(r.status === "open" && r.first_run_id === latestRunId)) return false;
+  const age = $("#fAge").value;
+  if (age && (r._days === null || r._days > +age) && r.category !== "undated") return false;
+  if (r.category === "undated" && !$("#fUndated").checked) return false;
+  const trust = $("#fTrust").value;
+  if (trust ? r.trust !== trust : r.category === "flagged") return false;
+  const c = $("#fCountry").value;
+  if (c && !(r._countries || []).includes(c)) return false;
+  const eq = [["#fRemote", "remote_type"], ["#fRole", "role_type"], ["#fSeniority", "seniority"], ["#fSource", "source"]];
+  for (const [sel, f] of eq) { const v = $(sel).value; if (v && (r[f] || "") !== v) return false; }
+  const tool = $("#fTool").value;
+  if (tool && !(r._tools || []).includes(tool)) return false;
+  if (searchTerm) {
+    const quick = `${r.title} ${r.company} ${r.location} ${r.tools}`.toLowerCase().includes(searchTerm);
+    if (!quick && !(searchIds && searchIds.has(r.identity))) return false;
+  }
+  return true;
+}
+const applyFilters = () => jobsTable.setFilter(jobFilter);
+
+function fillSelect(sel, values, label = (v) => v) {
+  const el = $(sel), cur = el.value, first = el.options[0].outerHTML;
+  el.innerHTML = first + values.map((v) => `<option value="${esc(v)}">${esc(label(v))}</option>`).join("");
+  if (values.includes(cur)) el.value = cur;
+}
+function counts(rows, key) {
+  const m = new Map();
+  for (const r of rows) for (const v of (Array.isArray(r[key]) ? r[key] : [r[key]])) if (v) m.set(v, (m.get(v) || 0) + 1);
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
+}
+
+async function loadJobs() {
+  const data = await api("/api/jobs?scope=all");
+  latestRunId = data.latest_run_id; today = data.today || today;
+  for (const r of data.jobs) {
+    r._days = daysOld(r.posted_date);
+    r._countries = (r.country || "").split(/;\s*/).map((s) => s.replace(/\s*\(\+\d+ more\)|\.\.\.$/g, "").trim()).filter(Boolean);
+    r._tools = (r.tools || "").split(/[,;]\s*/).map((s) => s.trim()).filter(Boolean);
+  }
+  fillSelect("#fCountry", counts(data.jobs, "_countries").slice(0, 150));
+  fillSelect("#fRemote", counts(data.jobs, "remote_type"));
+  fillSelect("#fRole", counts(data.jobs, "role_type"));
+  fillSelect("#fSeniority", counts(data.jobs, "seniority"));
+  fillSelect("#fTool", counts(data.jobs, "_tools").slice(0, 80));
+  fillSelect("#fSource", counts(data.jobs, "source"), srcName);
+  await jobsTable.replaceData(data.jobs);
+  applyFilters();
+}
+
+// search: instant match on title/company/tools, plus a server-side description search
+let searchTimer = null;
+$("#q").addEventListener("input", () => {
+  searchTerm = $("#q").value.trim().toLowerCase();
+  applyFilters();
+  clearTimeout(searchTimer);
+  if (searchTerm.length < 2) { searchIds = null; return; }
+  searchTimer = setTimeout(async () => {
+    const term = searchTerm;
+    try {
+      const res = await api("/api/search?q=" + encodeURIComponent(term));
+      if (term === searchTerm) { searchIds = new Set(res.ids); applyFilters(); }
+    } catch (e) {}
+  }, 350);
+});
+for (const id of ["#fAge", "#fStatus", "#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fTrust", "#fUndated"])
+  $(id).addEventListener("change", applyFilters);
+$("#resetBtn").onclick = () => {
+  $("#q").value = ""; searchTerm = ""; searchIds = null;
+  $("#fAge").value = "7"; $("#fStatus").value = "open"; $("#fTrust").value = ""; $("#fUndated").checked = false;
+  for (const id of ["#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource"]) $(id).value = "";
+  jobsTable.setSort([{ column: "posted_date", dir: "desc" }]);
+  applyFilters();
+};
+
+// export what is on screen (filtered + sorted)
+function exportRows() {
+  return jobsTable.getData("active").map((r) => ({
+    Status: r.status === "closed" ? "Closed" : (r.first_run_id === latestRunId ? "New" : "Open"),
+    Title: r.title, Company: r.company, Location: r.location, Country: r.country, "Work type": r.remote_type,
+    "Role type": r.role_type, Seniority: r.seniority, Experience: r.experience, Tools: r.tools, Salary: r.salary,
+    "Posted date": r.posted_date, "Days old": r._days, "First seen": r.first_seen, Source: srcName(r.source),
+    Trust: r.trust, "Trust notes": r.trust_reasons, "Job URL": r.job_url, "Apply URL": r.apply_url,
+  }));
+}
+const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+$("#xlsxBtn").onclick = () => {
+  const ws = XLSX.utils.json_to_sheet(exportRows()), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "QA jobs");
+  XLSX.writeFile(wb, `qa_jobs_${stamp()}.xlsx`);
+};
+$("#csvBtn").onclick = () => {
+  const ws = XLSX.utils.json_to_sheet(exportRows());
+  const blob = new Blob(["﻿" + XLSX.utils.sheet_to_csv(ws)], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `qa_jobs_${stamp()}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ---------- detail drawer ----------
+async function openDrawer(id) {
+  const d = $("#drawer");
+  d.innerHTML = '<p class="muted">Loading...</p>';
+  d.classList.remove("hidden"); $("#drawerBg").classList.remove("hidden");
+  let j;
+  try { j = await api("/api/job?id=" + encodeURIComponent(id)); }
+  catch (e) { d.innerHTML = `<p class="fail">${esc(e.message)}</p>`; return; }
+  const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
+  const link = (u) => u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>` : "";
+  const via = j.source_kind === "aggregator"
+    ? `Listed on ${esc(srcName(j.source))} (original posting linked below)`
+    : `${esc(j.company)}'s own job board on ${esc(srcName(j.source))}`;
+  d.innerHTML = `
+    <button class="btn close" id="drawerClose" aria-label="Close">&#10005;</button>
+    <h2>${badges(j)}${esc(j.title)}</h2>
+    <div class="co">${esc(j.company)}${j.location ? " &middot; " + esc(j.location) : ""}</div>
+    <div class="actions">
+      ${j.job_url ? `<a class="btn primary" href="${esc(j.job_url)}" target="_blank" rel="noopener noreferrer">Open posting</a>` : ""}
+      ${j.apply_url && j.apply_url !== j.job_url ? `<a class="btn" href="${esc(j.apply_url)}" target="_blank" rel="noopener noreferrer">Apply link</a>` : ""}
+    </div>
+    <dl>
+      ${row("Source", via)}
+      ${row("Posted", esc(j.posted_date) + (j.date_source === "first_seen" ? " (first seen by the scraper; the site gives no date)" : ""))}
+      ${row("First seen", esc(j.first_seen))}
+      ${row("Status", j.status === "closed" ? `Closed (no longer listed since ${esc(j.closed_on)})` : "Open")}
+      ${row("Country", esc(j.country))}
+      ${row("Work type", esc(j.remote_type))}
+      ${row("Role type", esc(j.role_type))}
+      ${row("Seniority", esc(j.seniority))}
+      ${row("Experience", esc(j.experience))}
+      ${row("Tools", esc(j.tools))}
+      ${row("Salary", esc(j.salary))}
+      ${row("Trust", esc(j.trust) + (j.trust_reasons ? ` <span class="muted">(${esc(j.trust_reasons)})</span>` : ""))}
+      ${row("Why matched", esc(j.qa_match))}
+      ${row("Company site", link(j.company_url))}
+      ${row("Job URL", link(j.job_url))}
+    </dl>
+    <div class="desc">${esc(j.description) || '<span class="muted">No description provided by the source.</span>'}</div>`;
+  $("#drawerClose").onclick = closeDrawer;
+}
+function closeDrawer() { $("#drawer").classList.add("hidden"); $("#drawerBg").classList.add("hidden"); }
+$("#drawerBg").onclick = closeDrawer;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+
+// ---------- run panel ----------
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m ? `${m} min ${s}s` : `${s}s`;
+}
+function showMsg(text, err = false) {
+  const m = $("#runMsg");
+  m.textContent = text; m.className = "msg" + (err ? " err" : ""); m.classList.toggle("hidden", !text);
+}
+function renderRun(run, active) {
+  $("#runBtn").disabled = active;
+  $("#cancelBtn").classList.toggle("hidden", !active);
+  if (!run) { $("#pText").textContent = "No runs yet. Press Run now to fetch the latest jobs."; $("#stats").innerHTML = ""; return; }
+  const total = run.boards_total || 0, done = run.boards_done || 0;
+  const pct = run.status === "done" ? 100 : (total ? Math.min(100, (done / total) * 100) : (active ? 2 : 0));
+  $("#fill").style.width = pct + "%";
+  const started = run.started_at || run.created_at;
+  const end = run.finished_at ? Date.parse(run.finished_at) : Date.now();
+  const label = { queued: "Starting (waiting for GitHub Actions)...", running: `Running: ${done.toLocaleString()} / ${total.toLocaleString()} sources checked`,
+    done: "Last run finished", failed: "Last run failed", cancelled: "Last run cancelled" }[run.status] || run.status;
+  $("#pText").innerHTML = `${esc(label)} <span class="muted">&middot; run #${run.id}, ${esc(run.mode)}, last ${run.max_age} days</span>` +
+    (run.cancel_requested && active ? ' <span class="muted">(stopping...)</span>' : "");
+  $("#pTime").textContent = started ? (active ? "running for " : "took ") + fmtDur((end - Date.parse(started)) / 1000) +
+    (!active && run.finished_at ? " · " + new Date(run.finished_at).toLocaleString() : "") : "";
+  const st = (n, l) => `<div class="stat"><b>${(n ?? 0).toLocaleString()}</b><span>${l}</span></div>`;
+  $("#stats").innerHTML = st(run.kept, "fresh QA jobs") + st(run.new_jobs, "new this run") +
+    st(run.closed_jobs, "closed this run") + st(run.jobs_seen, "postings read") + st(done, "sources checked") +
+    st(run.boards_failed, "sources failed");
+  if (run.status === "failed" && run.error) showMsg("Run failed: " + run.error, true);
+}
+
+let pollTimer = null;
+async function poll() {
+  clearTimeout(pollTimer);
+  let active = false;
+  try {
+    const cur = await api("/api/runs/current");
+    active = cur.active;
+    const run = cur.run;
+    renderRun(run, active);
+    // refresh the table while a run is saving results, and once when it ends
+    if (active && run && run.status === "running") await loadJobs();
+    if (wasActive && !active) { await loadJobs(); loadRuns(); loadBoards(); }
+    wasActive = active;
+  } catch (e) {
+    $("#pText").textContent = "Can't reach the server: " + e.message;
+  }
+  pollTimer = setTimeout(poll, active ? 6000 : 30000);
+}
+
+function askPassword() {
+  return new Promise((resolve) => {
+    const dlg = $("#pwDialog");
+    $("#pwInput").value = "";
+    dlg.returnValue = "";
+    dlg.onclose = () => resolve(dlg.returnValue === "ok" ? $("#pwInput").value : null);
+    dlg.showModal();
+  });
+}
+async function withPassword(fn) {
+  let pw = store.get("runPassword") || "";
+  if (config.password_required && !pw) { pw = await askPassword(); if (pw === null) return; }
+  try { return await fn(pw); }
+  catch (e) {
+    if (e.status === 401) {
+      store.del("runPassword");
+      pw = await askPassword(); if (pw === null) return;
+      return await fn(pw);
+    }
+    throw e;
+  }
+}
+$("#runBtn").onclick = async () => {
+  showMsg("");
+  $("#runBtn").disabled = true;
+  try {
+    await withPassword(async (pw) => {
+      const res = await api("/api/runs", { method: "POST",
+        body: JSON.stringify({ mode: $("#mode").value, max_age: +$("#maxage").value, password: pw }) });
+      if (pw) store.set("runPassword", pw);
+      $("#fAge").value = $("#maxage").value;
+      showMsg(`Run #${res.run_id} started. New jobs appear in the table as each board finishes.`);
+      return res;
+    });
+  } catch (e) { showMsg(e.message, true); }
+  wasActive = true;
+  poll();
+};
+$("#cancelBtn").onclick = async () => {
+  try {
+    const cur = await api("/api/runs/current");
+    if (!cur.run) return;
+    await withPassword((pw) => api(`/api/runs/${cur.run.id}/cancel`, { method: "POST", body: JSON.stringify({ password: pw }) }));
+    showMsg("Stopping the run. Jobs found so far are kept.");
+  } catch (e) { showMsg(e.message, true); }
+  poll();
+};
+
+// ---------- boards & runs ----------
+const boardsTable = new Tabulator("#boardsTable", {
+  layout: "fitColumns", height: "calc(100vh - 200px)", placeholder: "No board scans yet", renderVertical: "virtual",
+  initialSort: [{ column: "qa_jobs", dir: "desc" }],
+  columns: [
+    { title: "Company", field: "company", minWidth: 180, widthGrow: 2, formatter: (c) => {
+        const d = c.getData(); return d.careers_url ? `<a href="${esc(d.careers_url)}" target="_blank" rel="noopener noreferrer">${esc(d.company)}</a>` : esc(d.company); } },
+    { title: "System", field: "ats", width: 140, formatter: (c) => esc(srcName(c.getValue())) },
+    { title: "Status", field: "last_status", width: 90, formatter: (c) => c.getValue() === "ok" ? '<span class="ok">OK</span>' : '<span class="fail">Failed</span>' },
+    { title: "Postings", field: "jobs_total", width: 95, hozAlign: "right", sorter: "number" },
+    { title: "QA (in window)", field: "qa_jobs", width: 125, hozAlign: "right", sorter: "number" },
+    { title: "Kept", field: "kept", width: 75, hozAlign: "right", sorter: "number" },
+    { title: "Last scanned", field: "last_scanned", width: 120 },
+    { title: "Last QA job", field: "last_qa_date", width: 115 },
+    { title: "Error", field: "last_error", minWidth: 160, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
+  ],
+});
+function boardFilter(r) {
+  const q = $("#bq").value.trim().toLowerCase(), s = $("#bStatus").value;
+  if (q && !`${r.company} ${r.ats} ${r.token}`.toLowerCase().includes(q)) return false;
+  if (s === "ok" && r.last_status !== "ok") return false;
+  if (s === "failed" && r.last_status !== "failed") return false;
+  if (s === "qa" && !r.last_qa_date) return false;
+  return true;
+}
+boardsTable.on("dataFiltered", (f, rows) => { $("#bCount").textContent = `${rows.length.toLocaleString()} boards`; });
+$("#bq").addEventListener("input", () => boardsTable.setFilter(boardFilter));
+$("#bStatus").addEventListener("change", () => boardsTable.setFilter(boardFilter));
+async function loadBoards() {
+  try { const d = await api("/api/boards"); await boardsTable.replaceData(d.boards); boardsTable.setFilter(boardFilter); } catch (e) {}
+}
+
+const runsTable = new Tabulator("#runsTable", {
+  layout: "fitColumns", height: "calc(100vh - 120px)", placeholder: "No runs yet",
+  columns: [
+    { title: "#", field: "id", width: 60, sorter: "number" },
+    { title: "Started", field: "started_at", width: 170, formatter: (c) => c.getValue() ? new Date(c.getValue()).toLocaleString() : "" },
+    { title: "Mode", field: "mode", width: 80 },
+    { title: "Days", field: "max_age", width: 65, hozAlign: "right" },
+    { title: "Status", field: "status", width: 100, formatter: (c) => {
+        const v = c.getValue(); return v === "done" ? '<span class="ok">done</span>' : v === "failed" ? '<span class="fail">failed</span>' : esc(v); } },
+    { title: "Sources", field: "boards_done", width: 90, hozAlign: "right" },
+    { title: "Failed", field: "boards_failed", width: 75, hozAlign: "right" },
+    { title: "Postings read", field: "jobs_seen", width: 120, hozAlign: "right" },
+    { title: "Fresh QA", field: "kept", width: 90, hozAlign: "right" },
+    { title: "New", field: "new_jobs", width: 70, hozAlign: "right" },
+    { title: "Closed", field: "closed_jobs", width: 75, hozAlign: "right" },
+    { title: "Time", field: "seconds", width: 95, formatter: (c) => c.getValue() ? fmtDur(c.getValue()) : "" },
+    { title: "By", field: "trigger", width: 85 },
+    { title: "Note", field: "error", minWidth: 140, widthGrow: 1, formatter: (c) => esc(c.getValue()) },
+  ],
+});
+async function loadRuns() { try { const d = await api("/api/runs"); await runsTable.replaceData(d.runs); } catch (e) {} }
+
+// ---------- tabs ----------
+document.querySelectorAll("nav button[data-tab]").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("nav button[data-tab]").forEach((x) => x.classList.toggle("on", x === b));
+  for (const t of ["jobs", "boards", "runs"]) $("#tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  ({ jobs: jobsTable, boards: boardsTable, runs: runsTable })[b.dataset.tab].redraw(true);
+  if (b.dataset.tab === "boards") loadBoards();
+  if (b.dataset.tab === "runs") loadRuns();
+});
+
+// ---------- start ----------
+(async function init() {
+  await Promise.all([jobsTable, boardsTable, runsTable].map((t) => new Promise((r) => t.initialized ? r() : t.on("tableBuilt", r))));
+  try { config = await api("/api/config"); } catch (e) {}
+  if (config.runner === "none") { $("#runBtn").title = "Runs are not configured on this server"; }
+  try { await loadJobs(); } catch (e) { showMsg("Could not load jobs: " + e.message, true); }
+  poll();
+})();
+</script>
+</body>
+</html>

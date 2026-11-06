@@ -1,0 +1,12 @@
+output/
+data/
+tests/
+docs/
+.github/
+**/__pycache__/
+*.db
+*.log
+run.py
+check_board.py
+discover.py
+serve.py

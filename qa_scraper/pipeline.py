@@ -23,6 +23,9 @@ class BoardResult:
     kept: int = 0
     error: str = ""
     seconds: float = 0.0
+    seen: list[Job] = field(default_factory=list, repr=False)     # every QA-titled posting on the board
+    results: list[Job] = field(default_factory=list, repr=False)  # kept + undated + flagged
+    saved: bool = False                                           # written to the database
 
 
 @dataclass
@@ -35,6 +38,9 @@ class RunResult:
     duplicates_merged: int = 0
     seconds: float = 0.0
     store: object = None                                  # store.Store / NullStore
+    cancelled: bool = False
+    new_jobs: int = 0
+    closed_jobs: int = 0
 
 
 def load_boards(path=None) -> list[Board]:
@@ -59,6 +65,7 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
         return
     prior_first_seen = res.store.first_seen(job.identity())
     res.store.record(job)               # every QA-titled job, whatever its age
+    br.seen.append(job)
     freshness.stamp(job)
     if job.days_old is not None and job.days_old > max_age:
         res.counts["too_old"] += 1
@@ -89,15 +96,19 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     enrich.enrich(job)
     legitimacy.assess(job)
     if not legitimacy.is_legit(job):
+        job.category = "flagged"
         res.flagged.append(job)
         res.counts["flagged"] += 1
     elif job.days_old is None:
+        job.category = "undated"
         res.undated.append(job)
         res.counts["undated"] += 1
     else:
+        job.category = "kept"
         res.kept.append(job)
         br.kept += 1
         res.counts["kept"] += 1
+    br.results.append(job)
 
 
 async def _scrape_board(http: Http, board: Board, max_age: int, res: RunResult,
@@ -122,9 +133,19 @@ async def _scrape_board(http: Http, board: Board, max_age: int, res: RunResult,
                                        for j in jobs))
                 res.store.mark_board(board.key)
         except Exception as e:  # one broken board must never stop the run
-            br.error = f"{type(e).__name__}: {e}"[:300]
+            br.ok, br.error = False, f"{type(e).__name__}: {e}"[:300]
     br.seconds = round(time.time() - t0, 1)
+    await _save(res, br)
     progress(br)
+
+
+async def _save(res: RunResult, br: BoardResult) -> None:
+    try:
+        await res.store.board_done(br)
+    except Exception as e:      # the scrape goes on; the problem shows in the counts
+        res.counts["db_errors"] += 1
+        if res.counts["db_errors"] <= 5:
+            print(f"database write failed for {br.board.key}: {type(e).__name__}: {e}"[:300], flush=True)
 
 
 async def _scrape_feed(http: Http, feed, max_age: int, res: RunResult, progress) -> None:
@@ -144,8 +165,9 @@ async def _scrape_feed(http: Http, feed, max_age: int, res: RunResult, progress)
             await asyncio.gather(*(_process_job(http, None, j, max_age, res, br, False, known) for j in jobs))
             res.store.mark_board(board.key)
     except Exception as e:
-        br.error = f"{type(e).__name__}: {e}"[:300]
+        br.ok, br.error = False, f"{type(e).__name__}: {e}"[:300]
     br.seconds = round(time.time() - t0, 1)
+    await _save(res, br)
     progress(br)
 
 
@@ -205,16 +227,29 @@ async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: 
             line = f"[{done[0]}/{total}] {br.board.ats}:{br.board.token} - {status}"
             print(line.encode("ascii", "replace").decode(), flush=True)
 
+    await res.store.start(max_age, total)
     async with Http() as http:
-        await asyncio.gather(*(_scrape_board(http, b, max_age, res, keep_all_titles, progress) for b in boards),
-                             *(_scrape_feed(http, f, max_age, res, progress) for f in feeds))
+        pending = {asyncio.create_task(_scrape_board(http, b, max_age, res, keep_all_titles, progress))
+                   for b in boards}
+        pending |= {asyncio.create_task(_scrape_feed(http, f, max_age, res, progress)) for f in feeds}
+        while pending:
+            _, pending = await asyncio.wait(pending, timeout=5)
+            if pending and await res.store.cancel_requested():
+                res.cancelled = True
+                for t in pending:
+                    t.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+                if verbose:
+                    print("Run cancelled.", flush=True)
+                break
         res.counts["http_errors"] = len(http.errors)
-    res.store.close()
 
-    res.kept, m0 = _drop_aggregator_copies(res.kept)
-    res.kept, m1 = _dedupe(res.kept)
-    res.undated, m2 = _dedupe(res.undated)
-    res.duplicates_merged = m0 + m1 + m2
-    res.kept.sort(key=lambda j: (j.days_old if j.days_old is not None else 99, j.company.lower(), j.title.lower()))
-    res.seconds = round(time.time() - t0, 1)
+        res.kept, m0 = _drop_aggregator_copies(res.kept)
+        res.kept, m1 = _dedupe(res.kept)
+        res.undated, m2 = _dedupe(res.undated)
+        res.duplicates_merged = m0 + m1 + m2
+        res.kept.sort(key=lambda j: (j.days_old if j.days_old is not None else 99, j.company.lower(), j.title.lower()))
+        res.seconds = round(time.time() - t0, 1)
+        await res.store.finish(res, http, status="cancelled" if res.cancelled else "done")
+    res.store.close()
     return res
