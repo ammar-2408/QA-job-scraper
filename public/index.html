@@ -262,7 +262,10 @@ async function api(path, opts = {}) {
 }
 
 // ---------- state ----------
-let config = { password_required: false, runner: "none" };
+let config = { password_required: false, runner: "batch" };
+const ACTIVE = ["queued", "running", "finishing"];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let driving = false;
 let latestRunId = null, today = new Date().toISOString().slice(0, 10);
 let searchIds = null, searchTerm = "", lastRunStatus = null, wasActive = false;
 
@@ -478,10 +481,13 @@ function renderRun(run, active) {
   $("#fill").style.width = pct + "%";
   const started = run.started_at || run.created_at;
   const end = run.finished_at ? Date.parse(run.finished_at) : Date.now();
-  const label = { queued: "Starting (waiting for GitHub Actions)...", running: `Running: ${done.toLocaleString()} / ${total.toLocaleString()} sources checked`,
+  const label = { queued: "Starting...", running: `Running: ${done.toLocaleString()} / ${total.toLocaleString()} sources checked`,
+    finishing: "Finishing: removing duplicates and checking closed jobs...",
     done: "Last run finished", failed: "Last run failed", cancelled: "Last run cancelled" }[run.status] || run.status;
   $("#pText").innerHTML = `${esc(label)} <span class="muted">&middot; run #${run.id}, ${esc(run.mode)}, last ${run.max_age} days</span>` +
-    (run.cancel_requested && active ? ' <span class="muted">(stopping...)</span>' : "");
+    (run.cancel_requested && active ? ' <span class="muted">(stopping...)</span>' : "") +
+    (active && config.runner === "batch" ? '<br><span class="muted">Keep this page open until the run finishes. Closing it pauses the run; opening the site again continues it.</span>' : "") +
+    (active && config.runner !== "batch" ? '<br><span class="muted">The run continues on the server even if you close this page.</span>' : "");
   $("#pTime").textContent = started ? (active ? "running for " : "took ") + fmtDur((end - Date.parse(started)) / 1000) +
     (!active && run.finished_at ? " · " + new Date(run.finished_at).toLocaleString() : "") : "";
   const st = (n, l) => `<div class="stat"><b>${(n ?? 0).toLocaleString()}</b><span>${l}</span></div>`;
@@ -491,6 +497,36 @@ function renderRun(run, active) {
   if (run.status === "failed" && run.error) showMsg("Run failed: " + run.error, true);
 }
 
+// The open page drives a run: each /step call scrapes the next slice of sources on the server.
+async function drive(runId) {
+  if (driving) return;
+  driving = true;
+  let fails = 0, steps = 0;
+  try {
+    while (true) {
+      let res;
+      try {
+        res = await api(`/api/runs/${runId}/step`, { method: "POST" });
+        fails = 0;
+      } catch (e) {
+        fails++;
+        if (e.status === 404) break;
+        $("#pText").textContent = `Connection problem (${e.message}), retrying...`;
+        await sleep(Math.min(30000, 3000 * fails));
+        continue;
+      }
+      renderRun(res.run, res.active);
+      steps++;
+      if (!res.active) break;
+      if (steps % 2 === 1) await loadJobs();      // show new jobs as they come in
+    }
+  } finally {
+    driving = false;
+  }
+  await loadJobs(); loadRuns(); loadBoards();
+  poll();
+}
+
 let pollTimer = null;
 async function poll() {
   clearTimeout(pollTimer);
@@ -498,17 +534,17 @@ async function poll() {
   try {
     const cur = await api("/api/runs/current");
     active = cur.active;
-    const run = cur.run;
-    renderRun(run, active);
-    // refresh the table while a run is saving results, and once when it ends
-    if (active && run && run.status === "running") await loadJobs();
+    renderRun(cur.run, active);
+    if (config.runner === "batch" && active && cur.run.status === "running" && !driving) { drive(cur.run.id); return; }
+    if (active && cur.run.status === "running" && config.runner !== "batch") await loadJobs();
     if (wasActive && !active) { await loadJobs(); loadRuns(); loadBoards(); }
     wasActive = active;
   } catch (e) {
     $("#pText").textContent = "Can't reach the server: " + e.message;
   }
-  pollTimer = setTimeout(poll, active ? 6000 : 30000);
+  pollTimer = setTimeout(poll, active ? 8000 : 30000);
 }
+window.addEventListener("beforeunload", (e) => { if (driving) { e.preventDefault(); e.returnValue = ""; } });
 
 function askPassword() {
   return new Promise((resolve) => {
@@ -541,19 +577,19 @@ $("#runBtn").onclick = async () => {
         body: JSON.stringify({ mode: $("#mode").value, max_age: +$("#maxage").value, password: pw }) });
       if (pw) store.set("runPassword", pw);
       $("#fAge").value = $("#maxage").value;
-      showMsg(`Run #${res.run_id} started. New jobs appear in the table as each board finishes.`);
+      showMsg(`Run #${res.run_id} started. New jobs appear in the table as boards finish.`);
+      if (config.runner === "batch") drive(res.run_id); else poll();
       return res;
     });
-  } catch (e) { showMsg(e.message, true); }
+  } catch (e) { showMsg(e.message, true); $("#runBtn").disabled = false; }
   wasActive = true;
-  poll();
 };
 $("#cancelBtn").onclick = async () => {
   try {
     const cur = await api("/api/runs/current");
     if (!cur.run) return;
     await withPassword((pw) => api(`/api/runs/${cur.run.id}/cancel`, { method: "POST", body: JSON.stringify({ password: pw }) }));
-    showMsg("Stopping the run. Jobs found so far are kept.");
+    showMsg("Run stopped. Jobs found so far are kept.");
   } catch (e) { showMsg(e.message, true); }
   poll();
 };
@@ -625,7 +661,6 @@ document.querySelectorAll("nav button[data-tab]").forEach((b) => b.onclick = () 
 (async function init() {
   await Promise.all([jobsTable, boardsTable, runsTable].map((t) => new Promise((r) => t.initialized ? r() : t.on("tableBuilt", r))));
   try { config = await api("/api/config"); } catch (e) {}
-  if (config.runner === "none") { $("#runBtn").title = "Runs are not configured on this server"; }
   try { await loadJobs(); } catch (e) { showMsg("Could not load jobs: " + e.message, true); }
   poll();
 })();

@@ -1,16 +1,18 @@
 """Website API (FastAPI). Runs on Vercel as one serverless function, or locally via serve.py.
 
-Reads the database that the scraper writes (Postgres online, SQLite locally). The
-scrape itself never runs here (Vercel stops functions after a few minutes): the Run
-button asks GitHub Actions to start .github/workflows/scrape.yml, or, locally, starts
-run.py in the background.
+Reads and writes the database (Postgres online, SQLite locally). Two ways to run a scrape:
+
+  RUNNER=process  (Hugging Face Spaces, local serve.py) run.py is started as a background
+                  process on this server; the page can be closed while it runs.
+  RUNNER=batch    (Vercel, where requests stop after a few minutes) the open page keeps
+                  calling POST /api/runs/{id}/step, which scrapes the next slice of sources
+                  within STEP_SECONDS - see qa_scraper/batch.py.
 
 Environment:
   DATABASE_URL    Postgres connection string (unset -> data/jobs.db)
   RUN_PASSWORD    password for starting/cancelling runs (unset -> no password)
-  GH_TOKEN        GitHub token allowed to start workflows on GH_REPO
-  GH_REPO         default ammar-06/QA-job-scraper
-  LOCAL_RUNNER=1  start run.py on this machine instead of GitHub Actions
+  RUNNER          process | batch (default batch)
+  STEP_SECONDS    time budget of one slice in batch mode (default 200)
 """
 from __future__ import annotations
 
@@ -25,19 +27,19 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import httpx  # noqa: E402
 from fastapi import FastAPI, HTTPException, Query  # noqa: E402
 from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
+from qa_scraper import batch  # noqa: E402
 from qa_scraper.db import DB  # noqa: E402
 
-GH_REPO = os.getenv("GH_REPO", "ammar-06/QA-job-scraper")
-GH_WORKFLOW = os.getenv("GH_WORKFLOW", "scrape.yml")
-GH_REF = os.getenv("GH_REF", "main")
-STALE_RUNNING = timedelta(minutes=20)    # no heartbeat for this long -> the runner died
-STALE_QUEUED = timedelta(minutes=15)     # GitHub never started the job
+STEP_SECONDS = float(os.getenv("STEP_SECONDS", "200"))
+RUNNER = os.getenv("RUNNER", "batch")
+STALE_RUNNING = timedelta(hours=6) if RUNNER == "batch" else timedelta(minutes=20)
+STALE_QUEUED = timedelta(minutes=5)
+STALE_FINISHING = timedelta(minutes=15)
 CLOSED_DAYS = 30                         # closed jobs stay visible this long
 
 LIST_COLS = ["identity", "title", "company", "location", "country", "remote_type", "salary", "posted_date",
@@ -74,12 +76,6 @@ def _parse(ts: str | None) -> datetime | None:
         return None
 
 
-def runner() -> str:
-    if os.getenv("LOCAL_RUNNER") == "1":
-        return "local"
-    return "github" if os.getenv("GH_TOKEN") else "none"
-
-
 def check_password(given: str | None) -> None:
     want = os.getenv("RUN_PASSWORD", "")
     if want and not hmac.compare_digest((given or "").encode(), want.encode()):
@@ -87,18 +83,16 @@ def check_password(given: str | None) -> None:
 
 
 def sweep_stale(d: DB) -> None:
-    """A run whose runner died can't report it; time it out here."""
-    for r in d.all("SELECT id, status, created_at, heartbeat FROM runs WHERE status IN ('queued','running')"):
-        if r["status"] == "running":
-            beat = _parse(r["heartbeat"])
-            if beat and now() - beat > STALE_RUNNING:
-                d.execute("UPDATE runs SET status='failed', finished_at=?, error=? WHERE id=?",
-                          (now().isoformat(timespec="seconds"), "the runner stopped responding", r["id"]))
-        else:
-            made = _parse(r["created_at"])
-            if made and now() - made > STALE_QUEUED:
-                d.execute("UPDATE runs SET status='failed', finished_at=?, error=? WHERE id=?",
-                          (now().isoformat(timespec="seconds"), "the run never started (GitHub Actions)", r["id"]))
+    """A run nobody drives any more (all pages closed for hours) is ended here."""
+    for r in d.all("SELECT id, status, heartbeat FROM runs WHERE status IN ('queued','running','finishing')"):
+        beat = _parse(r["heartbeat"])
+        limit = {"finishing": STALE_FINISHING, "queued": STALE_QUEUED}.get(r["status"], STALE_RUNNING)
+        if beat and now() - beat > limit:
+            why = {"finishing": "finishing did not complete", "queued": "the run never started"}.get(
+                r["status"], "stopped: no open page continued the run" if RUNNER == "batch"
+                else "the run stopped responding (server restarted?)")
+            d.execute("UPDATE runs SET status='failed', finished_at=?, error=? WHERE id=?",
+                      (now().isoformat(timespec="seconds"), why, r["id"]))
 
 
 # -- pages ---------------------------------------------------------------------------
@@ -164,9 +158,12 @@ class CancelRequest(BaseModel):
     password: str | None = None
 
 
+ACTIVE = ("queued", "running", "finishing")
+
+
 @app.get("/api/config")
 def get_config():
-    return {"password_required": bool(os.getenv("RUN_PASSWORD")), "runner": runner()}
+    return {"password_required": bool(os.getenv("RUN_PASSWORD")), "runner": RUNNER}
 
 
 @app.get("/api/runs/current")
@@ -177,7 +174,7 @@ def current_run():
         row = d.one("SELECT * FROM runs ORDER BY id DESC LIMIT 1")
     finally:
         d.close()
-    return {"run": row, "active": bool(row and row["status"] in ("queued", "running"))}
+    return {"run": row, "active": bool(row and row["status"] in ACTIVE)}
 
 
 @app.get("/api/runs")
@@ -193,22 +190,18 @@ def runs():
 @app.post("/api/runs")
 def start_run(req: RunRequest):
     check_password(req.password)
-    how = runner()
-    if how == "none":
-        raise HTTPException(503, "No runner configured (GH_TOKEN is not set)")
     d = db()
     try:
         sweep_stale(d)
-        if d.one("SELECT id FROM runs WHERE status IN ('queued','running')"):
+        if d.one("SELECT id FROM runs WHERE status IN ('queued','running','finishing')"):
             raise HTTPException(409, "A run is already in progress")
+        if RUNNER == "batch":
+            return {"run_id": batch.create_run(d, req.mode, req.max_age)}
         ts = now().isoformat(timespec="seconds")
         run_id = d.one("INSERT INTO runs (created_at, heartbeat, status, mode, max_age, trigger) "
                        "VALUES (?,?,?,?,?,?) RETURNING id", (ts, ts, "queued", req.mode, req.max_age, "website"))["id"]
         try:
-            if how == "local":
-                _start_local(run_id, req.mode, req.max_age)
-            else:
-                _dispatch_github(run_id, req.mode, req.max_age)
+            _start_process(run_id, req.mode, req.max_age)
         except Exception as e:
             msg = f"could not start the run: {e}"[:300]
             d.execute("UPDATE runs SET status='failed', finished_at=?, error=? WHERE id=?", (ts, msg, run_id))
@@ -218,48 +211,47 @@ def start_run(req: RunRequest):
         d.close()
 
 
-@app.post("/api/runs/{run_id}/cancel")
-def cancel_run(run_id: int, req: CancelRequest):
-    check_password(req.password)
-    d = db()
-    try:
-        row = d.one("SELECT status, gh_run_id FROM runs WHERE id=?", (run_id,))
-        if not row:
-            raise HTTPException(404, "Run not found")
-        if row["status"] not in ("queued", "running"):
-            return {"status": row["status"]}
-        d.execute("UPDATE runs SET cancel_requested=1 WHERE id=?", (run_id,))
-        if row["status"] == "queued":       # not started yet: stop it right away
-            d.execute("UPDATE runs SET status='cancelled', finished_at=? WHERE id=?",
-                      (now().isoformat(timespec="seconds"), run_id))
-            if row["gh_run_id"] and runner() == "github":
-                _github("POST", f"/actions/runs/{row['gh_run_id']}/cancel")
-            return {"status": "cancelled"}
-        return {"status": "cancelling"}     # the scraper stops within ~10 s and saves what it has
-    finally:
-        d.close()
-
-
-def _github(method: str, path: str, json=None) -> httpx.Response:
-    return httpx.request(method, f"https://api.github.com/repos/{GH_REPO}{path}", json=json, timeout=20,
-                         headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}",
-                                  "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
-                                  "User-Agent": "qa-job-scraper-web"})
-
-
-def _dispatch_github(run_id: int, mode: str, max_age: int) -> None:
-    r = _github("POST", f"/actions/workflows/{GH_WORKFLOW}/dispatches",
-                {"ref": GH_REF, "inputs": {"run_id": str(run_id), "mode": mode, "max_age": str(max_age)}})
-    if r.status_code not in (200, 204):
-        raise RuntimeError(f"GitHub answered {r.status_code}: {r.text[:200]}")
-
-
-def _start_local(run_id: int, mode: str, max_age: int) -> None:
+def _start_process(run_id: int, mode: str, max_age: int) -> None:
+    out = ROOT / "output"
+    out.mkdir(exist_ok=True)
+    log = open(out / f"web_run_{run_id}.log", "w", encoding="utf-8")
     flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "DETACHED_PROCESS", 0)
-    log = open(ROOT / "output" / f"web_run_{run_id}.log", "w", encoding="utf-8")
     subprocess.Popen([sys.executable, "run.py", "--run-id", str(run_id), "--mode", mode, "--max-age", str(max_age),
                       "--trigger", "website", "--quiet"], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                      creationflags=flags, env={**os.environ, "PYTHONUNBUFFERED": "1"})
+
+
+@app.post("/api/runs/{run_id}/step")
+async def run_step(run_id: int):
+    """Scrape the next slice of a running run (called repeatedly by the open page)."""
+    d = db()
+    try:
+        run = await batch.step(d, run_id, STEP_SECONDS)
+    finally:
+        d.close()
+    if not run:
+        raise HTTPException(404, "Run not found")
+    return {"run": run, "active": run["status"] in ACTIVE}
+
+
+@app.post("/api/runs/{run_id}/cancel")
+async def cancel_run(run_id: int, req: CancelRequest):
+    check_password(req.password)
+    d = db()
+    try:
+        row = d.one("SELECT status FROM runs WHERE id=?", (run_id,))
+        if not row:
+            raise HTTPException(404, "Run not found")
+        if RUNNER == "batch":
+            await batch.cancel(d, run_id)
+        elif row["status"] == "queued":
+            d.execute("UPDATE runs SET status='cancelled', cancel_requested=1, finished_at=? WHERE id=?",
+                      (now().isoformat(timespec="seconds"), run_id))
+        elif row["status"] == "running":
+            d.execute("UPDATE runs SET cancel_requested=1 WHERE id=?", (run_id,))   # run.py stops within ~10 s
+        return {"status": d.one("SELECT status FROM runs WHERE id=?", (run_id,))["status"]}
+    finally:
+        d.close()
 
 
 # -- boards --------------------------------------------------------------------------

@@ -43,7 +43,7 @@ def now_iso() -> str:
 
 
 _JOB_COLS = ["identity", *JOB_FIELDS, "detail_url", "category", "duplicate", "first_seen", "last_seen",
-             "first_run_id", "last_run_id", "status", "closed_on", "updated_at"]
+             "first_run_id", "last_run_id", "status", "closed_on", "updated_at", "result_run_id"]
 _KEEP_ON_UPDATE = {"identity", "first_seen", "first_run_id"}
 _JOB_UPSERT = (f"INSERT INTO jobs ({', '.join(_JOB_COLS)}) VALUES ({', '.join('?' * len(_JOB_COLS))}) "
                f"ON CONFLICT(identity) DO UPDATE SET "
@@ -52,9 +52,11 @@ _JOB_UPSERT = (f"INSERT INTO jobs ({', '.join(_JOB_COLS)}) VALUES ({', '.join('?
 
 class Store:
     def __init__(self, path=None, db: DB | None = None, run_id: int | None = None,
-                 mode: str = "full", trigger: str = "cli"):
+                 mode: str = "full", trigger: str = "cli", init: bool = True):
+        self._owns_db = db is None
         self.db = db or (DB(f"sqlite:///{path}") if path else DB())
-        self.db.init_schema()
+        if init:
+            self.db.init_schema()
         self.today = today().isoformat()
         self.run_id = run_id
         self.mode, self.trigger = mode, trigger
@@ -131,7 +133,7 @@ class Store:
                     self._written.add(ident)
                     rows.append((ident, *[getattr(j, f) for f in JOB_FIELDS],
                                  j.detail_ref.get("url") or "", j.category, 0, self._seen.get(ident, day), day,
-                                 run, run, "open", None, now))
+                                 run, run, "open", None, now, run))
                 tx.many(_JOB_UPSERT, rows)
             tx.execute(
                 "INSERT INTO boards (key, company, ats, token, careers_url, first_scanned, last_scanned, last_status, "
@@ -154,46 +156,75 @@ class Store:
         br.saved = True
 
     async def finish(self, res, http=None, status: str = "done", error: str = "") -> None:
-        """Mark duplicates, close jobs that disappeared, write the final counts."""
-        final = {j.identity() for j in res.kept + res.undated + res.flagged}
-        dups = self._written - final
-        ok_boards = {br.board.key: br.board.ats for br in res.boards
-                     if br.ok and getattr(br, "saved", False) and br.board.ats != "feed"}
-        gone = []
-        if ok_boards and self.run_id is not None:
-            cands = await asyncio.to_thread(
-                self.db.all, "SELECT identity, board, source, detail_url FROM jobs "
-                             "WHERE status='open' AND (last_run_id IS NULL OR last_run_id<?)", (self.run_id,))
-            cands = [c for c in cands if c["board"] in ok_boards]
-            verify = [c for c in cands if c["source"] in SEARCH_BASED]
-            gone = [c["identity"] for c in cands if c["source"] not in SEARCH_BASED]
-            if verify and http is not None:
-                async def page_gone(c):
-                    if not c["detail_url"]:
-                        return False
-                    r = await http.request("GET", c["detail_url"])
-                    return r is not None and r.status_code in (404, 410)
-                flags = await asyncio.gather(*(page_gone(c) for c in verify))
-                gone += [c["identity"] for c, g in zip(verify, flags) if g]
-        await asyncio.to_thread(self._finish, res, dups, final, gone, status, error)
-
-    def _finish(self, res, dups, final, gone, status, error) -> None:
-        with self.db.transaction() as tx:
-            tx.many("UPDATE jobs SET duplicate=1 WHERE identity=?", [(i,) for i in dups])
-            tx.many("UPDATE jobs SET duplicate=0 WHERE identity=?", [(i,) for i in final & self._written])
-            tx.many("UPDATE jobs SET status='closed', closed_on=? WHERE identity=?", [(self.today, i) for i in gone])
         if self.run_id is None:
             return
-        new = self.db.one("SELECT COUNT(*) AS n FROM jobs WHERE first_run_id=? AND duplicate=0 AND category='kept'",
-                          (self.run_id,))["n"]
-        self.db.execute("UPDATE runs SET status=?, finished_at=?, heartbeat=?, seconds=?, kept=?, new_jobs=?, "
-                        "closed_jobs=?, error=? WHERE id=?",
-                        (status, now_iso(), now_iso(), round(time.time() - self._t0, 1), len(res.kept), new,
-                         len(gone), error or None, self.run_id))
-        res.new_jobs, res.closed_jobs = new, len(gone)
+        out = await finalize(self.db, self.run_id, http, status, error, seconds=round(time.time() - self._t0, 1))
+        res.new_jobs, res.closed_jobs = out["new_jobs"], out["closed_jobs"]
 
     def close(self) -> None:
-        self.db.close()
+        if self._owns_db:
+            self.db.close()
+
+
+async def finalize(db: DB, run_id: int, http=None, status: str = "done", error: str = "",
+                   seconds: float | None = None) -> dict:
+    """End of a run, worked out from the database (so it also works when the run was
+    spread over many short web requests): hide duplicates, close jobs that disappeared,
+    write the final counts."""
+    from . import pipeline
+    from .models import Job
+    rows = await asyncio.to_thread(db.all, "SELECT * FROM jobs WHERE result_run_id=?", (run_id,))
+    jobs = {"kept": [], "undated": [], "flagged": []}
+    for r in rows:
+        j = Job(**{f: r[f] for f in JOB_FIELDS if f in ("title", "company", "job_url", "source")})
+        for f in JOB_FIELDS:
+            setattr(j, f, r[f] if r[f] is not None else ("" if f != "days_old" else None))
+        j.category = r["category"]
+        j._ident = r["identity"]
+        jobs.setdefault(r["category"], []).append(j)
+    kept, _ = pipeline._drop_aggregator_copies(jobs["kept"])
+    kept, _ = pipeline._dedupe(kept)
+    undated, _ = pipeline._dedupe(jobs["undated"])
+    final = {j._ident for j in kept + undated + jobs["flagged"]}
+    written = {r["identity"] for r in rows}
+
+    ok_boards = {r["key"] for r in await asyncio.to_thread(
+        db.all, "SELECT key FROM boards WHERE last_run_id=? AND last_status='ok' AND ats != 'feed'", (run_id,))}
+    gone: list[str] = []
+    if ok_boards:
+        cands = await asyncio.to_thread(
+            db.all, "SELECT identity, board, source, detail_url FROM jobs "
+                    "WHERE status='open' AND (last_run_id IS NULL OR last_run_id<?)", (run_id,))
+        cands = [c for c in cands if c["board"] in ok_boards]
+        verify = [c for c in cands if c["source"] in SEARCH_BASED]
+        gone = [c["identity"] for c in cands if c["source"] not in SEARCH_BASED]
+        if verify and http is not None:
+            async def page_gone(c):
+                if not c["detail_url"]:
+                    return False
+                r = await http.request("GET", c["detail_url"])
+                return r is not None and r.status_code in (404, 410)
+            flags = await asyncio.gather(*(page_gone(c) for c in verify))
+            gone += [c["identity"] for c, g in zip(verify, flags) if g]
+
+    day = today().isoformat()
+
+    def write():
+        with db.transaction() as tx:
+            tx.many("UPDATE jobs SET duplicate=1 WHERE identity=?", [(i,) for i in written - final])
+            tx.many("UPDATE jobs SET duplicate=0 WHERE identity=?", [(i,) for i in final])
+            tx.many("UPDATE jobs SET status='closed', closed_on=? WHERE identity=?", [(day, i) for i in gone])
+        new = db.one("SELECT COUNT(*) AS n FROM jobs WHERE first_run_id=? AND duplicate=0 AND category='kept'",
+                     (run_id,))["n"]
+        run = db.one("SELECT started_at FROM runs WHERE id=?", (run_id,)) or {}
+        secs = seconds
+        if secs is None and run.get("started_at"):
+            secs = round((datetime.now(timezone.utc) - datetime.fromisoformat(run["started_at"])).total_seconds(), 1)
+        db.execute("UPDATE runs SET status=?, finished_at=?, heartbeat=?, seconds=?, kept=?, new_jobs=?, "
+                   "closed_jobs=?, error=COALESCE(?, error) WHERE id=?",
+                   (status, now_iso(), now_iso(), secs, len(kept), new, len(gone), error or None, run_id))
+        return {"new_jobs": new, "closed_jobs": len(gone), "kept": len(kept)}
+    return await asyncio.to_thread(write)
 
 
 class NullStore:

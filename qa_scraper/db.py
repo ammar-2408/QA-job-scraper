@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS runs (
     boards_total INTEGER DEFAULT 0, boards_done INTEGER DEFAULT 0, boards_failed INTEGER DEFAULT 0,
     jobs_seen INTEGER DEFAULT 0, qa_found INTEGER DEFAULT 0, kept INTEGER DEFAULT 0,
     new_jobs INTEGER DEFAULT 0, closed_jobs INTEGER DEFAULT 0,
-    cancel_requested INTEGER DEFAULT 0, gh_run_id TEXT, error TEXT, seconds REAL
+    cancel_requested INTEGER DEFAULT 0, gh_run_id TEXT, error TEXT, seconds REAL,
+    next_index INTEGER DEFAULT 0, step_size INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS boards (
     key TEXT PRIMARY KEY, company TEXT, ats TEXT, token TEXT, careers_url TEXT,
@@ -53,12 +54,19 @@ CREATE TABLE IF NOT EXISTS jobs (
     {JOB_COLUMNS},
     detail_url TEXT, category TEXT, duplicate INTEGER DEFAULT 0,
     first_seen TEXT, last_seen TEXT, first_run_id INTEGER, last_run_id INTEGER,
-    status TEXT DEFAULT 'open', closed_on TEXT, updated_at TEXT
+    status TEXT DEFAULT 'open', closed_on TEXT, updated_at TEXT, result_run_id INTEGER
 );
 CREATE INDEX IF NOT EXISTS jobs_status ON jobs (status);
 CREATE INDEX IF NOT EXISTS jobs_board ON jobs (board);
+CREATE TABLE IF NOT EXISTS run_retries (id {ID}, run_id INTEGER, key TEXT);
 CREATE INDEX IF NOT EXISTS seen_board ON seen (board);
+CREATE INDEX IF NOT EXISTS jobs_result_run ON jobs (result_run_id);
 """
+
+
+# Columns added after the first release: (table, column, type). Added to older databases.
+_MIGRATIONS = [("runs", "next_index", "INTEGER DEFAULT 0"), ("runs", "step_size", "INTEGER DEFAULT 0"),
+               ("jobs", "result_run_id", "INTEGER")]
 
 
 def database_url() -> str:
@@ -119,6 +127,8 @@ class DB:
             else "INTEGER PRIMARY KEY AUTOINCREMENT"
         cols = ",\n    ".join(f"{f} INTEGER" if f == "days_old" else f"{f} TEXT" for f in JOB_FIELDS)
         script = _SCHEMA.replace("{ID}", ident).replace("{JOB_COLUMNS}", cols)
+        index_lines = [l for l in script.splitlines() if l.startswith("CREATE INDEX")]
+        script = "\n".join(l for l in script.splitlines() if not l.startswith("CREATE INDEX"))
         with self.lock:
             if self.kind == "pg":
                 for stmt in (s.strip() for s in script.split(";")):
@@ -127,6 +137,19 @@ class DB:
                         self.conn.execute(body)
             else:
                 self.conn.executescript(script)
+            for table, col, typ in _MIGRATIONS:
+                have = self._columns(table)
+                if col not in have:
+                    self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+            for line in index_lines:
+                self.conn.execute(line.rstrip(";"))
+
+    def _columns(self, table: str) -> set[str]:
+        if self.kind == "pg":
+            rows = self.conn.execute("SELECT column_name FROM information_schema.columns WHERE table_name=%s",
+                                     (table,)).fetchall()
+            return {r["column_name"] for r in rows}
+        return {r[1] for r in self.conn.execute(f"PRAGMA table_info({table})").fetchall()}
 
     def close(self) -> None:
         try:

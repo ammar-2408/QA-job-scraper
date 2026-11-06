@@ -39,6 +39,7 @@ class RunResult:
     seconds: float = 0.0
     store: object = None                                  # store.Store / NullStore
     cancelled: bool = False
+    timed_out: bool = False
     new_jobs: int = 0
     closed_jobs: int = 0
 
@@ -209,8 +210,13 @@ def _dedupe(jobs: list[Job]) -> tuple[list[Job], int]:
 
 
 async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: bool = False,
-              verbose: bool = True, feeds: list | None = None, store=None) -> RunResult:
-    """Scrape `boards` (company job boards) and `feeds` (open job-site modules)."""
+              verbose: bool = True, feeds: list | None = None, store=None, batch: bool = False,
+              deadline: float | None = None) -> RunResult:
+    """Scrape `boards` (company job boards) and `feeds` (open job-site modules).
+
+    batch=True: one slice of a larger run (the website's step-by-step runs): the run
+    row is neither started nor finished here. `deadline` (time.time() value): boards
+    still unfinished then are stopped and reported as timed out (res.timed_out)."""
     max_age = config.MAX_AGE_DAYS if max_age is None else max_age
     feeds = feeds or []
     res = RunResult()
@@ -227,13 +233,21 @@ async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: 
             line = f"[{done[0]}/{total}] {br.board.ats}:{br.board.token} - {status}"
             print(line.encode("ascii", "replace").decode(), flush=True)
 
-    await res.store.start(max_age, total)
+    if not batch:
+        await res.store.start(max_age, total)
     async with Http() as http:
         pending = {asyncio.create_task(_scrape_board(http, b, max_age, res, keep_all_titles, progress))
                    for b in boards}
         pending |= {asyncio.create_task(_scrape_feed(http, f, max_age, res, progress)) for f in feeds}
         while pending:
-            _, pending = await asyncio.wait(pending, timeout=5)
+            wait = 5 if deadline is None else max(0.1, min(5, deadline - time.time()))
+            _, pending = await asyncio.wait(pending, timeout=wait)
+            if pending and deadline is not None and time.time() >= deadline:
+                res.timed_out = True
+                for t in pending:
+                    t.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+                break
             if pending and await res.store.cancel_requested():
                 res.cancelled = True
                 for t in pending:
@@ -250,6 +264,7 @@ async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: 
         res.duplicates_merged = m0 + m1 + m2
         res.kept.sort(key=lambda j: (j.days_old if j.days_old is not None else 99, j.company.lower(), j.title.lower()))
         res.seconds = round(time.time() - t0, 1)
-        await res.store.finish(res, http, status="cancelled" if res.cancelled else "done")
+        if not batch:
+            await res.store.finish(res, http, status="cancelled" if res.cancelled else "done")
     res.store.close()
     return res

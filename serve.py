@@ -1,6 +1,6 @@
 """Run the website on this computer (same app that Vercel hosts).
 
-  python serve.py            # http://localhost:8000, Run button starts run.py locally
+  python serve.py            # http://localhost:8000, Run button starts run.py in the background
   python serve.py --port 9000
 
 Uses data/jobs.db unless DATABASE_URL is set (then it shows the online database).
@@ -17,7 +17,7 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args()
-    os.environ.setdefault("LOCAL_RUNNER", "1")
+    os.environ.setdefault("RUNNER", "process")
     os.makedirs("output", exist_ok=True)
     if not args.no_browser:
         webbrowser.open(f"http://localhost:{args.port}")
