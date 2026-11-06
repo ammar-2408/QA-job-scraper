@@ -79,17 +79,41 @@ HARD_EXCLUDE = _rx(
     r"\bconstruction\b", r"\bcivil\b", r"\bconcrete\b", r"\bgeotech",
     r"\bsupplier quality\b", r"\bsupply chain quality\b", r"\bmanufacturing\b", r"\bproduction (quality|test)\b",
     r"\binspector\b", r"\binspection\b", r"\bcalibration\b",
-    r"\bhardware\b", r"\bsilicon\b", r"\bpost[- ]si\b", r"\basic\b", r"\bfpga\b", r"(?-i:\bSoC\b)", r"\bdft\b",
-    r"\brf\b", r"\bantenna", r"\bbattery\b", r"\bcell test", r"\bmechanical\b", r"\belectrical\b",
-    r"\bpcb\b", r"\bsemiconductor", r"\bwafer", r"\boptical\b", r"\bphotonic", r"\bthermal\b",
     r"\bvehicle test", r"\btest driver\b", r"\bdrive test", r"\bflight test", r"\bcrash test",
-    r"\bwind tunnel", r"\bpowertrain", r"\bavionics", r"\bdyno", r"\bdesign verification\b",
+    r"\bwind tunnel", r"\bpowertrain", r"\bavionics", r"\bdyno",
     r"\bnurs(e|ing)\b", r"\bquality of care\b", r"\bhealthcare quality\b",
+    # Operations / service "QA" (reviewing claims, transactions, AI training data, ad creatives...)
+    r"\bauthori[sz]ation\b", r"\binvestment services\b", r"\btransaction services\b", r"\breviewer\b",
+    r"\bcreative\b", r"\bteaching\b", r"\binstructor\b", r"\bfield quality\b", r"\bfootwear\b",
+    r"(?-i:\bFW\b)", r"\bapparel\b", r"\bmap data\b", r"\bfuel cell", r"\bcertification engineer\b",
     # Non-software "QA/testing" functions inside tech companies.
     r"\bcompliance\b", r"\baml\b", r"\bkyc\b", r"\bfcc\b", r"\bcontrols? testing\b", r"\bmodel validation\b",
     r"\bmonitoring (&|and) testing\b", r"\bcontent\b", r"\bsupport operations\b", r"\bcustomer support\b",
     r"\bdata quality\b", r"\bunderwriting\b", r"\bmerchant risk\b", r"\bvapt\b", r"\bsecurity testing\b",
+    # Physical-product testing at industrial employers (Bosch, Siemens, automotive...)
+    r"\brefrigerat", r"\bhvac\b", r"\bappliance", r"\bhydraulic", r"\bpneumatic", r"\bcombustion\b",
+    r"\bengine (test|testing|calibration)\b", r"\bbrake", r"\bchassis\b", r"\bstructural\b", r"\bmaterials? test",
+    r"\benvironmental test", r"\bemc\b", r"\bemi\b", r"\bacoustic", r"\bvibration", r"\bdurability\b",
+    r"\bfluid", r"\bpackaging\b", r"\btextile", r"\bsoil\b", r"\bpipeline integrity\b",
+    # Pharma / life-science computer-system validation (regulated GxP work, not software QA)
+    r"\bcomputer systems? validation\b", r"\bgxp\b", r"(?-i:\bCSV\b)", r"\bgcp\s*[-\u2013:]",
 )
+# HARDWARE: chip / electronics / physical-device testing and validation. Only an
+# explicit "software" in the title overrides this - "Electrical Test Automation
+# Engineer" and "GPU Validation Engineer" are hardware jobs even though they say
+# "test automation" / "validation".
+HARDWARE_EXCLUDE = _rx(
+    r"\bhardware\b", r"\bsilicon\b", r"\bpre[- ]?si\b", r"\bpost[- ]?si\b", r"\basic\b", r"\bfpga\b",
+    r"\bsoc\b", r"\bdft\b", r"\brf\b", r"\bantenna", r"\bbattery\b", r"\bcell test", r"\bmechanical\b",
+    r"\belectrical\b", r"\belectronics?\b", r"\bpcb\b", r"\bsemiconductor", r"\bwafer", r"\boptical\b",
+    r"\bphotonic", r"\bthermal\b", r"\bdesign verification\b", r"\bserdes\b", r"\bmixed[- ]signal\b",
+    r"\banalog\b", r"\bic\b", r"\bcpu\b", r"\bgpu\b", r"\bchip\b", r"\bboard\b", r"\bate\b", r"\bhvm\b",
+    r"\bpower (test|validation|architect)", r"\bproduct quality engineer\b", r"\bproduct test engineer\b",
+    r"\bcommunications test\b", r"\bdigital validation\b", r"\bplatform validation\b", r"\bic validation\b",
+    r"\bvalidation engineer\b(?!.*\bsoftware\b)",
+)
+_HARDWARE_OVERRIDE = re.compile(r"\b(software|sw)\b", _I)
+
 # ROLE: the job itself is a different profession, even if it mentions QA/testing
 # ("Growth Marketer (AI-Powered QA Automation)", "Product Manager - Security Testing").
 # No override.
@@ -146,6 +170,10 @@ DESC_NON_SOFTWARE = [
     r"call cent(er|re)", r"contact cent(er|re)", r"inbound calls", r"customer interactions",
     r"call monitoring", r"loan files?", r"underwriting", r"mortgage", r"medical records",
     r"chart review", r"claims processing", r"patient care", r"coach(ing)? agents",
+    # chip / electronics design and lab work
+    r"\brtl\b", r"verilog", r"systemverilog", r"\buvm\b", r"oscilloscope", r"schematic", r"post[- ]silicon",
+    r"pre[- ]silicon", r"bring[- ]up", r"\bwafer", r"mixed[- ]signal", r"\bserdes\b", r"\bpcb\b",
+    r"solder", r"characteri[sz]ation", r"\bate\b", r"spectrum analy[sz]er", r"signal integrity",
 ]
 _DESC_SW = [re.compile(p, _I) for p in DESC_SOFTWARE]
 _DESC_NSW = [re.compile(p, _I) for p in DESC_NON_SOFTWARE]
@@ -162,6 +190,8 @@ def title_candidate(title: str) -> str:
     if ROLE_EXCLUDE.search(t):
         return ""
     if HARD_EXCLUDE.search(t) and not _SOFTWARE_OVERRIDE.search(t):
+        return ""
+    if HARDWARE_EXCLUDE.search(t) and not _HARDWARE_OVERRIDE.search(t):
         return ""
     if STRONG.search(t):
         return "strong"

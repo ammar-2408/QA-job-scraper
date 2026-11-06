@@ -40,6 +40,28 @@ NOT_QA_TITLES = [
     "Information Security Engineer (Thick Client Testing / Harness / VAPT)",
     "Team Lead, Quality Analyst, Product Support Operations", "Senior Staff Software Engineer- Search Quality",
     "Credit Model Validation Manager", "Hardware Engineer, Test", "Quality Control Specialist, Sterile (Nights)",
+    # Milestone 2 audit:
+    "Development Engineer - Refrigeration Testing (f/m/div.)",
+    "GCP - Computer System Validation Specialist (12 month limited-term)", "EMC Test Engineer",
+    # Milestone 2 full-run audit (Workday brought in chip/hardware and operations roles):
+    "ATE Test Engineer", "CPU HVM Functional-Test Verification Engineer", "Data Center Power Test Architect",
+    "GPU Validation Engineer", "High-Speed SerDes & Mixed-Signal Validation Engineer", "Senior IC Validation Engineer",
+    "Pre-si Power and Performance System Validation Engineer", "SOC Functional Validation Engineer",
+    "Senior Product Quality Engineer, Chip - Automotive", "Electrical Test Automation Engineer",
+    "Electronics Design Engineer - Test Automation- fixed term", "Product Certification Engineer, Fuel Cell Systems",
+    "FW Product Testing Analyst II, Korea", "QA & Authorisation Handler", "Investment Services - QA, AVP",
+    "Quality Analyst - Enterprise Transaction Services", "Quality Assurance (QA) Reviewer - AI Data Projects",
+    "Creative QA Analyst", "AI for QA Teaching Experts", "Senior Map Data Validation Lead - Autonomous Vehicles",
+    "Communications Test Engineer I", "Staff Product Test Engineer", "Digital Validation Engineer",
+]
+QA_TITLES += [
+    "[Internship Program Q1 2027] Automation Test Engineer Intern (Selenium)", "Embedded Software Test Engineer",
+    "Senior CUDA Test Development Software Engineer, SDET", "Bulgarian Localization QA Tester / Proofreader",
+    "Chapter Area Lead - Software Testing and Test Automation", "GCP QA Automation Engineer",
+    "Hardware/Software Testing Intern", "Embedded software test engineer", "Software Verification Engineer - Networking",
+    "Platform Software Validation Engineer - SDET", "L6E Software and Technology Validation Engineer",
+    "Sr. SW Test Engineer", "Software Test & Verification Engineer (Experienced/Senior)",
+    "LQA Game Tester (Japanese) - Freelance Remote", "QA Testers wanted in Jordan!", "Galaxy AI Tester",
 ]
 QA_TITLES += [
     "Senior Engineering Manager, Test Systems & Tooling", "Software Engineer II, Backend (Test Infra)",
@@ -129,9 +151,17 @@ class TestLegitimacy(unittest.TestCase):
             self.assertEqual(j.trust, "company_ats", desc)
 
     def test_aggregator_needs_identity(self):
-        j = self._job(SW_DESC * 3, kind="aggregator", company_url="")
+        j = self._job(SW_DESC * 3, kind="aggregator", company="", company_url="")
         legitimacy.assess(j)
         self.assertEqual(j.trust, "flagged")
+        j = self._job("Short QA ad.", kind="aggregator", company_url="https://acme.com")
+        legitimacy.assess(j)
+        self.assertEqual(j.trust, "flagged")
+        # A missing website alone is only a note
+        j = self._job(SW_DESC * 3, kind="aggregator", company_url="")
+        legitimacy.assess(j)
+        self.assertEqual(j.trust, "aggregator_verified")
+        self.assertIn("no company website", j.trust_reasons)
         j = self._job(SW_DESC * 3, kind="aggregator", company_url="https://acme.com")
         legitimacy.assess(j)
         self.assertEqual(j.trust, "aggregator_verified")

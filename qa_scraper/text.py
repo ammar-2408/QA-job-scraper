@@ -33,6 +33,14 @@ def html_to_text(raw: str) -> str:
     return text[: config.MAX_DESC]
 
 
+def xml_text(tag, name: str) -> str:
+    """Text of the first child element `name` (BeautifulSoup has no findtext())."""
+    if tag is None:
+        return ""
+    child = tag.find(name)
+    return child.get_text() if child is not None else ""
+
+
 def today() -> date:
     return datetime.now(timezone.utc).date()
 

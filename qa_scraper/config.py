@@ -18,12 +18,13 @@ MAX_CONCURRENCY = int(os.getenv("QA_MAX_CONCURRENCY", "24"))   # requests in fli
 PER_HOST_CONCURRENCY = int(os.getenv("QA_PER_HOST", "4"))      # requests in flight per host
 RETRIES = int(os.getenv("QA_RETRIES", "3"))
 
-# A plain browser-like UA. No personal contact details are sent anywhere.
-USER_AGENT = os.getenv(
-    "QA_USER_AGENT",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-)
+# Identify honestly as a scraper (no browser impersonation, no personal contact details).
+USER_AGENT = os.getenv("QA_USER_AGENT", "qa-job-scraper/0.2 (+https://github.com/ammar-06/QA-job-scraper)")
+
+# Keyword searches sent to job boards that support server-side search (Workday,
+# SmartRecruiters). Results are still classified by qa_match; this only avoids
+# downloading thousands of unrelated postings from very large employers.
+SEARCH_TERMS = ["QA", "quality assurance", "test", "tester", "testing", "SDET", "quality engineer", "automation"]
 
 # Hard cap on stored description length (Excel cell limit is 32,767).
 MAX_DESC = 30000

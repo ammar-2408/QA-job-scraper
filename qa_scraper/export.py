@@ -54,7 +54,14 @@ def write_all(res: RunResult, max_age: int, out_dir: Path | None = None) -> dict
     by_role, by_country = {}, {}
     for j in res.kept:
         by_role[j.role_type] = by_role.get(j.role_type, 0) + 1
-        for c in (j.country or "Unknown").split("; "):
+        countries = [c for c in (j.country or "").split("; ") if c]
+        if not countries:
+            keys = ["Unknown / worldwide"]
+        elif len(countries) > 3 or "more)" in j.country:
+            keys = ["Multiple countries (region-wide remote)"]   # don't count one job 40 times
+        else:
+            keys = countries
+        for c in keys:
             by_country[c] = by_country.get(c, 0) + 1
     lines = [
         f"QA job scraper - run {stamp}",
@@ -73,7 +80,11 @@ def write_all(res: RunResult, max_age: int, out_dir: Path | None = None) -> dict
         "",
         "By role type:", *[f"  {k}: {v}" for k, v in sorted(by_role.items(), key=lambda x: -x[1])],
         "",
-        "By country (top 25):", *[f"  {k}: {v}" for k, v in sorted(by_country.items(), key=lambda x: -x[1])[:25]],
+        "By source:", *[f"  {k}: {v}" for k, v in sorted(
+            {s: sum(1 for j in res.kept if j.source == s) for s in {j.source for j in res.kept}}.items(),
+            key=lambda x: -x[1])],
+        "",
+        "By country (top 25; a job open in several countries counts once per country):", *[f"  {k}: {v}" for k, v in sorted(by_country.items(), key=lambda x: -x[1])[:25]],
     ]
     failed = [b for b in res.boards if not b.ok]
     if failed:

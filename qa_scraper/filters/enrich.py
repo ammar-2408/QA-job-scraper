@@ -116,9 +116,10 @@ _US_STATE_NAME_RE = re.compile(r",\s*(" + "|".join(re.escape(s) for s in _US_STA
 def country_from(location: str, hint: str = "") -> str:
     """Best-effort country list from a location string ('; '-joined when several)."""
     found: list[str] = []
-    h = (hint or "").strip()
-    if h:
-        found.append(_ISO2.get(h.upper(), _COUNTRY_ALIASES.get(h.lower(), h if len(h) > 3 else "")))
+    for h in (hint or "").split(";"):
+        h = h.strip()
+        if h:
+            found.append(_ISO2.get(h.upper(), _COUNTRY_ALIASES.get(h.lower(), h if len(h) > 3 else "")))
     loc = location or ""
     for m in _COUNTRY_RE.finditer(loc):
         name = next(c for c in COUNTRIES if c.lower() == m.group(1).lower())
@@ -134,7 +135,10 @@ def country_from(location: str, hint: str = "") -> str:
     for rx, country in _CITY_RE:
         if rx.search(loc):
             found.append(country)
-    return "; ".join(dict.fromkeys(f for f in found if f))
+    out = list(dict.fromkeys(f for f in found if f))
+    if len(out) > 8:     # e.g. "any country in Latin America": keep the cell readable
+        return "; ".join(out[:8]) + f" (+{len(out) - 8} more)"
+    return "; ".join(out)
 
 
 def remote_from(job: Job) -> str:

@@ -1,0 +1,147 @@
+# Workday boards for discover.py.
+#   "Company | https://<tenant>.<wdN>.myworkdayjobs.com/<site>"  -> verified directly
+#   "Company"                                                     -> host and site are guessed
+# Wrong entries are harmless: only boards that answer with open jobs are added.
+
+# ── Tech / semiconductors / hardware-software ──
+NVIDIA | https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite
+Salesforce | https://salesforce.wd12.myworkdayjobs.com/External_Career_Site
+Adobe | https://adobe.wd5.myworkdayjobs.com/external_experienced
+Intel | https://intel.wd1.myworkdayjobs.com/External
+Cisco | https://cisco.wd5.myworkdayjobs.com/Cisco_Careers
+Dell | https://dell.wd1.myworkdayjobs.com/External
+HP | https://hp.wd5.myworkdayjobs.com/ExternalCareerSite
+HPE | https://hpe.wd5.myworkdayjobs.com/Jobsathpe
+PayPal | https://paypal.wd1.myworkdayjobs.com/jobs
+Workday | https://workday.wd5.myworkdayjobs.com/Workday
+Autodesk | https://autodesk.wd1.myworkdayjobs.com/Ext
+Broadcom | https://broadcom.wd1.myworkdayjobs.com/External_Career
+Qualcomm | https://qualcomm.wd5.myworkdayjobs.com/External
+Micron | https://micron.wd1.myworkdayjobs.com/External
+CrowdStrike | https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers
+Zoom | https://zoom.wd5.myworkdayjobs.com/Zoom
+Motorola Solutions | https://motorolasolutions.wd5.myworkdayjobs.com/Careers
+Sony | https://sonyglobal.wd1.myworkdayjobs.com/SonyGlobalCareers
+Red Hat | https://redhat.wd5.myworkdayjobs.com/jobs
+Yahoo | https://ouryahoo.wd5.myworkdayjobs.com/careers
+Expedia | https://expedia.wd5.myworkdayjobs.com/search
+Thomson Reuters | https://thomsonreuters.wd5.myworkdayjobs.com/External_Career_Site
+Gartner | https://gartner.wd5.myworkdayjobs.com/EXT
+NCR | https://ncr.wd1.myworkdayjobs.com/ext_non_china
+Samsung | https://sec.wd3.myworkdayjobs.com/Samsung_Careers
+Analog Devices | https://analogdevices.wd1.myworkdayjobs.com/External
+Marvell | https://marvell.wd1.myworkdayjobs.com/MarvellCareers
+NetApp | https://netapp.wd1.myworkdayjobs.com/NetAppCareers
+Nutanix | https://nutanix.wd1.myworkdayjobs.com/Nutanix_Careers
+Palo Alto Networks | https://paloaltonetworks.wd5.myworkdayjobs.com/External
+Fortinet | https://fortinet.wd3.myworkdayjobs.com/FortinetCareers
+Check Point | https://checkpoint.wd3.myworkdayjobs.com/CheckPoint
+Akamai | https://akamai.wd1.myworkdayjobs.com/AkamaiCareers
+Citrix | https://citrix.wd1.myworkdayjobs.com/CitrixCareers
+Box | https://boxinc.wd1.myworkdayjobs.com/Box
+Pure Storage | https://purestorage.wd5.myworkdayjobs.com/PureStorage
+Western Digital | https://wdc.wd1.myworkdayjobs.com/WD
+Seagate | https://seagatecareers.wd1.myworkdayjobs.com/careers
+Lenovo | https://lenovo.wd1.myworkdayjobs.com/External
+Logitech | https://logitech.wd5.myworkdayjobs.com/Logitech
+Garmin | https://garmin.wd1.myworkdayjobs.com/Garmin
+Trimble | https://trimble.wd1.myworkdayjobs.com/TrimbleCareers
+Zebra Technologies | https://zebra.wd1.myworkdayjobs.com/Zebra_Careers
+Keysight | https://keysight.wd5.myworkdayjobs.com/Keysight
+Synopsys | https://synopsys.wd1.myworkdayjobs.com/en-US/Synopsys
+Cadence | https://cadence.wd1.myworkdayjobs.com/External_Careers
+Siemens Healthineers | https://healthineers.wd3.myworkdayjobs.com/SHS
+Philips | https://philips.wd3.myworkdayjobs.com/jobs-and-careers
+Nokia | https://nokia.wd3.myworkdayjobs.com/Nokia
+Ericsson | https://ericsson.wd3.myworkdayjobs.com/Ericsson
+Arm | https://arm.wd1.myworkdayjobs.com/Careers
+Infineon | https://infineon.wd3.myworkdayjobs.com/External
+NXP | https://nxp.wd3.myworkdayjobs.com/careers
+Visa | https://visa.wd5.myworkdayjobs.com/Visa
+Mastercard | https://mastercard.wd1.myworkdayjobs.com/CorporateCareers
+Fiserv | https://fiserv.wd5.myworkdayjobs.com/EXT
+FIS | https://fis.wd5.myworkdayjobs.com/SearchJobs
+Global Payments | https://tsys.wd1.myworkdayjobs.com/TSYS
+Equifax | https://equifax.wd5.myworkdayjobs.com/External
+TransUnion | https://transunion.wd5.myworkdayjobs.com/TransUnion
+Experian | https://experian.wd3.myworkdayjobs.com/ExperianCareers
+
+# ── Finance ──
+Capital One | https://capitalone.wd12.myworkdayjobs.com/Capital_One
+Bank of America | https://ghr.wd1.myworkdayjobs.com/Lateral-US
+Citi | https://citi.wd5.myworkdayjobs.com/2
+Wells Fargo | https://wd1.myworkdaysite.com/recruiting/wf/WellsFargoJobs
+Morgan Stanley | https://ms.wd5.myworkdayjobs.com/External
+BlackRock | https://blackrock.wd1.myworkdayjobs.com/BlackRock_Professional
+State Street | https://statestreet.wd1.myworkdayjobs.com/Global
+Fidelity | https://fmr.wd1.myworkdayjobs.com/FidelityCareers
+Nasdaq | https://nasdaq.wd1.myworkdayjobs.com/Global_External_Site
+S&P Global | https://spgi.wd5.myworkdayjobs.com/SPGI_Careers
+Moody's | https://moodys.wd5.myworkdayjobs.com/Careers
+Travelers | https://travelers.wd5.myworkdayjobs.com/External
+Allstate | https://allstate.wd5.myworkdayjobs.com/allstate_careers
+Northern Trust | https://ntrs.wd1.myworkdayjobs.com/northerntrust
+US Bank | https://usbank.wd1.myworkdayjobs.com/US_Bank_Careers
+PNC | https://pnc.wd5.myworkdayjobs.com/External
+Barclays | https://barclays.wd3.myworkdayjobs.com/External_Career_Site_Barclays
+HSBC | https://hsbc.wd3.myworkdayjobs.com/External
+Deutsche Bank | https://db.wd3.myworkdayjobs.com/DBWebSite
+
+# ── Retail / media / travel / telecom ──
+Walmart | https://walmart.wd5.myworkdayjobs.com/WalmartExternal
+Target | https://target.wd5.myworkdayjobs.com/targetcareers
+Disney | https://disney.wd5.myworkdayjobs.com/disneycareer
+Warner Bros. Discovery | https://warnerbros.wd5.myworkdayjobs.com/global
+Nike | https://nike.wd1.myworkdayjobs.com/nke
+Comcast | https://comcast.wd5.myworkdayjobs.com/Comcast_Careers
+T-Mobile | https://tmobile.wd1.myworkdayjobs.com/External
+Lumen | https://lumen.wd5.myworkdayjobs.com/External
+Marriott | https://marriott.wd5.myworkdayjobs.com/marriott
+Hilton | https://hilton.wd1.myworkdayjobs.com/Hilton
+Chewy | https://chewy.wd5.myworkdayjobs.com/Chewy
+Wayfair | https://wayfair.wd1.myworkdayjobs.com/WayfairCareers
+eBay | https://ebay.wd5.myworkdayjobs.com/apply
+Netflix
+Spotify
+
+# ── Games ──
+Activision Blizzard | https://activision.wd1.myworkdayjobs.com/External
+Sony Interactive Entertainment | https://sonyinteractive.wd1.myworkdayjobs.com/SonyInteractiveEntertainmentGlobal
+Electronic Arts | https://ea.wd1.myworkdayjobs.com/EA_Careers
+Take-Two | https://taketwo.wd1.myworkdayjobs.com/External
+Zynga
+Ubisoft
+Nintendo
+Bandai Namco
+
+# ── Health / industry with large software teams ──
+Humana | https://humana.wd5.myworkdayjobs.com/Humana_External_Career_Site
+CVS Health | https://cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers
+Cigna | https://cigna.wd5.myworkdayjobs.com/cignacareers
+Elevance Health | https://elevancehealth.wd1.myworkdayjobs.com/ANT
+GE HealthCare | https://gehc.wd5.myworkdayjobs.com/GEHC_ExternalSite
+General Motors | https://generalmotors.wd5.myworkdayjobs.com/Careers_GM
+Boeing | https://boeing.wd1.myworkdayjobs.com/EXTERNAL_CAREERS
+3M | https://3m.wd1.myworkdayjobs.com/Search
+Honeywell | https://honeywell.wd5.myworkdayjobs.com/Honeywell
+Caterpillar | https://cat.wd5.myworkdayjobs.com/CaterpillarCareers
+
+# ── Consulting / IT services (big QA employers) ──
+Accenture | https://accenture.wd103.myworkdayjobs.com/AccentureCareers
+PwC | https://pwc.wd3.myworkdayjobs.com/Global_Experienced_Careers
+Cognizant
+Capgemini
+NTT Data
+DXC Technology | https://dxctechnology.wd1.myworkdayjobs.com/DXCJobs
+Kyndryl | https://kyndryl.wd5.myworkdayjobs.com/KyndrylProfessionalCareers
+Genpact
+Unisys | https://unisys.wd5.myworkdayjobs.com/External
+CGI
+Infosys
+Wipro
+HCLTech
+Tech Mahindra
+Virtusa
+Mphasis
+Hexaware
+Persistent Systems

@@ -51,11 +51,14 @@ def assess(job: Job) -> None:
         if m:
             reasons.append("apply via personal email address")
 
+    notes: list[str] = []
     if job.source_kind == "aggregator":
         if not (job.company or "").strip():
             reasons.append("no company name")
         if not job.company_url:
-            reasons.append("no company website")
+            # Most job sites don't publish the employer's website at all, so this
+            # alone is only a note, not a reason to drop the job.
+            notes.append("no company website listed")
         if len(job.description or "") < 250:
             reasons.append("very short description")
         if job.apply_url and job.company_url:
@@ -78,7 +81,7 @@ def assess(job: Job) -> None:
         job.trust = "flagged"
     else:
         job.trust = "aggregator_verified"
-    job.trust_reasons = "; ".join(reasons)
+    job.trust_reasons = "; ".join(reasons + notes)
 
 
 COMPANY_BOARD_RED_FLAGS = ("contact via messaging app", "apply via personal email address",

@@ -29,7 +29,10 @@ Python 3.11 or newer.
 python run.py                          # scrape every board in data/boards.csv
 python run.py --max-age 3              # only jobs from the last 3 days
 python run.py --ats greenhouse,lever   # only some job-board systems
+python run.py --no-feeds               # company boards only
+python run.py --feeds-only             # open job sites only
 python check_board.py lever spotify    # test one board
+python check_board.py feed himalayas   # test one job site
 python discover.py                     # find more boards from data/seed_companies.txt
 python -m unittest discover tests      # run the filter tests
 ```
@@ -46,17 +49,33 @@ Each run writes these files to `output/`:
 
 The CSV files open directly in Excel.
 
-## Job-board systems
+## Sources
 
-| System | Feed | Status |
-|---|---|---|
-| Greenhouse | `boards-api.greenhouse.io` | done |
-| Lever | `api.lever.co` | done |
-| Ashby | `api.ashbyhq.com/posting-api` | done |
-| Workday, SmartRecruiters, Workable, Recruitee, Personio, Teamtailor, BambooHR, Breezy | public JSON feeds | next |
-| Remote job sites (Remotive, RemoteOK, Arbeitnow, Himalayas, Jobicy, We Work Remotely) | public feeds | next |
+**Company job boards** (listed in `data/boards.csv`):
 
-LinkedIn, Indeed and Glassdoor are deliberately not scraped. Their terms forbid it.
+| System | Public feed |
+|---|---|
+| Greenhouse | `boards-api.greenhouse.io/v1/boards/{slug}/jobs` |
+| Lever | `api.lever.co/v0/postings/{slug}` |
+| Ashby | `api.ashbyhq.com/posting-api/job-board/{slug}` |
+| Workday | `{tenant}.wdN.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs` (keyword search) |
+| SmartRecruiters | `api.smartrecruiters.com/v1/companies/{id}/postings` (keyword search) |
+| Workable | `apply.workable.com/api/v1/widget/accounts/{slug}` |
+| Recruitee | `{slug}.recruitee.com/api/offers/` |
+| Personio | `{slug}.jobs.personio.de/xml` |
+| Teamtailor | `{slug}.teamtailor.com/jobs.rss` |
+| BambooHR | `{slug}.bamboohr.com/careers/list` |
+| Breezy HR | `{slug}.breezy.hr/json` |
+
+**Open job sites**: Himalayas, Arbeitnow, Jobicy, Remote OK, We Work Remotely and
+Remotive. Anyone can post on these, so their jobs need a company name, a real
+description and no scam signs before they are kept. If the same job is also on the
+company's own board, the company-board copy wins. These sites ask to be credited,
+so every row keeps its source and the original posting URL.
+
+The scraper identifies itself honestly in its User-Agent and only uses public
+feeds. LinkedIn, Indeed and Glassdoor are deliberately not scraped: their terms
+forbid it.
 
 ## Adding boards
 
@@ -65,11 +84,16 @@ each name on every supported system and adds a board to `data/boards.csv` only i
 that board really returns jobs. If you already know a board's exact slug, write it
 after a pipe: `Sauce Labs | saucelabs`.
 
+Workday boards go in `data/workday_seeds.txt`, either as `Company | careers URL`
+(checked directly) or just `Company` (the host and site name are guessed, which
+works less often because Workday site names vary a lot).
+
 ## Layout
 
 ```
 qa_scraper/
   sources/      one file per job-board system
+  feeds/        one file per open job site
   filters/      qa_match (is it QA?), freshness, legitimacy, enrich (extra columns)
   pipeline.py   run orchestration and de-duplication
   export.py     CSV files and the run report
@@ -77,4 +101,5 @@ qa_scraper/
 data/
   boards.csv            verified boards (written by discover.py)
   seed_companies.txt    company names for discover.py to try
+  workday_seeds.txt     Workday careers URLs / company names for discover.py
 ```

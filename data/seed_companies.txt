@@ -462,3 +462,223 @@ Innovaccer
 MindTickle
 Whatfix
 Leadsquared
+
+# ── Milestone 2: companies likely on SmartRecruiters / Workable / Recruitee / Personio /
+#    Teamtailor / BambooHR / Breezy (Europe, South Asia, MENA, LATAM, games, QA services) ──
+Bosch | BoschGroup
+Ubisoft | Ubisoft2
+Canva
+IKEA
+ServiceNow
+Visa
+Experian
+Skechers
+Equinox
+AbbVie
+Sky
+Wolt
+Delivery Hero | DeliveryHero
+Zalando
+Avery Dennison
+Continental
+LinkedIn
+Square Enix
+Gameloft
+Pearson
+McDonald's
+Nestle
+PUMA
+Lidl
+Bayer
+Siemens
+Allianz
+Swiss Re
+Vodafone
+Telefonica
+Orange
+Sanofi
+Hugging Face
+Taxfix
+Personio
+Celonis
+Trade Republic
+Scalable Capital
+GetYourGuide
+Mollie
+Picnic
+Bolt
+Miro
+Pipedrive
+Wise
+Glovo
+Cabify
+Typeform
+Factorial
+Travelperk
+Holded
+Jobandtalent
+Wallapop
+Idealista
+Fever
+Ironhack
+Spendesk
+Qonto
+Alan
+Doctolib
+BlaBlaCar
+Back Market
+Mirakl
+Ledger
+Contentsquare
+Swile
+Payfit
+Lydia
+ManoMano
+Vinted
+Revolut
+Monzo
+Starling Bank
+Deliveroo
+Ocado
+Skyscanner
+Darktrace
+Improbable
+Truecaller
+Klarna
+Tink
+Epidemic Sound
+Mentimeter
+Kry
+Voi
+Tibber
+Polestar
+Sinch
+King
+Embark Studios
+Paradox Interactive
+Remedy Entertainment
+Housemarque
+Supercell
+Rovio
+Small Giant Games
+Unity
+Playrix
+Nexters
+Belka Games
+Wargaming
+Pixel United
+Gameloft
+Keywords Studios
+Testronic
+Lionbridge
+GlobalStep
+PTW
+Pole To Win
+iXie Gaming
+QA Mentor
+QualityLogic
+a1qa
+ScienceSoft
+QAwerk
+TestFort
+Testlio
+Test IO
+Applause
+Global App Testing
+Bugcrowd
+Qualitest
+Cigniti
+Testbytes
+QASource
+Ness Digital Engineering
+Zensar
+Sogeti
+Codoid
+TestingXperts
+ThinkSys
+Mindfire Solutions
+Kualitatem
+Ebryx
+Lucky Mobile
+Mobilink
+Jazz
+Telenor
+Zong
+Daraz
+Foodpanda
+Bykea
+Careem
+NayaPay
+Abhi
+Bazaar
+Dastgyr
+Retailo
+JazzCash
+Easypaisa
+TPS
+Gaditek
+Ignite
+Codenuit
+Programmers Force
+Strategic Systems International
+Visionet
+Ovex Technologies
+Mindbridge
+Dubizzle
+Bayut
+Property Finder
+Talabat
+Noon
+Tabby
+Tamara
+Fetchr
+Anghami
+Kitopi
+Swvl
+Vezeeta
+Instabug
+Paymob
+Fawry
+Valu
+Halan
+Breadfast
+Thndr
+Rabbit
+Yassir
+Jumia
+Andela
+Kuda
+Opay
+PalmPay
+Interswitch
+M-Kopa
+Wave
+Sendwave
+MercadoLibre
+Nubank
+Rappi
+Kavak
+Clip
+Konfio
+Bitso
+Ualá
+dLocal
+EBANX
+QuintoAndar
+Loft
+Creditas
+Stone
+PicPay
+CI&T
+Wizeline
+Encora
+Globant
+Softtek
+Gorilla Logic
+Avantica
+Belatrix
+Ioet
+Jalasoft
+Bairesdev
+Nearsoft
+Sezzle

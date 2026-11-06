@@ -3,6 +3,8 @@
   python check_board.py greenhouse gitlab
   python check_board.py lever spotify --max-age 30
   python check_board.py ashby ramp --all        # list every QA job regardless of age
+  python check_board.py workday nvidia --host nvidia.wd5.myworkdayjobs.com --site NVIDIAExternalCareerSite
+  python check_board.py feed remotive           # one of the open job sites
 """
 from __future__ import annotations
 
@@ -29,9 +31,18 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="ignore the age limit (show every QA job)")
     args = ap.parse_args()
 
-    board = Board(company=args.company or args.token, ats=args.ats.lower(), token=args.token,
-                  host=args.host, site=args.site)
-    res = asyncio.run(pipeline.run([board], max_age=10_000 if args.all else args.max_age, verbose=False))
+    max_age = 10_000 if args.all else args.max_age
+    if args.ats.lower() == "feed":
+        from qa_scraper.feeds import FEEDS
+        if args.token not in FEEDS:
+            print(f"Unknown feed. Choose from: {', '.join(FEEDS)}")
+            return 1
+        board = Board(company=args.token, ats="feed", token=args.token)
+        res = asyncio.run(pipeline.run([], max_age=max_age, verbose=False, feeds=[FEEDS[args.token]]))
+    else:
+        board = Board(company=args.company or args.token, ats=args.ats.lower(), token=args.token,
+                      host=args.host, site=args.site)
+        res = asyncio.run(pipeline.run([board], max_age=max_age, verbose=False))
     br = res.boards[0]
     if not br.ok:
         print(f"FAILED: {br.error}")
