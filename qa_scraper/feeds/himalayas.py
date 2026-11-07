@@ -10,8 +10,10 @@ NAME = "himalayas"
 QUERIES = ["qa", "quality assurance", "qa engineer", "qa analyst", "qa tester", "tester", "software tester",
            "manual tester", "manual qa", "test automation", "automation tester", "qa automation", "sdet",
            "test engineer", "software test", "quality engineer", "mobile qa", "api testing", "game tester",
-           "selenium", "playwright", "cypress", "appium", "performance testing"]
-MAX_PAGES = 20
+           "selenium", "playwright", "cypress", "appium", "performance testing", "testing", "test analyst",
+           "qa specialist", "quality analyst", "functional tester", "junior qa", "qa intern", "uat tester",
+           "mobile tester", "qa automation engineer", "quality assurance analyst", "quality assurance engineer"]
+MAX_PAGES = 100          # 2,000 results per search; most stop earlier at their real total
 
 
 def _short(places: list[str], n: int = 4) -> str:
@@ -46,7 +48,8 @@ async def fetch(http, max_age: int) -> list[Job] | None:
                     posted_date=iso_date(j.get("pubDate")), date_source="source",
                     description=html_to_text(j.get("description") or j.get("excerpt") or ""),
                 )
-            if len(data["jobs"]) < 20:
+            total = data.get("totalCount") or 0
+            if len(data["jobs"]) < 20 or (total and page * 20 >= total):
                 break
 
     await asyncio.gather(*(one_query(q) for q in QUERIES))     # the HTTP client caps requests per host

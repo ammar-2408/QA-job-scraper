@@ -32,7 +32,7 @@ _SENIORITY = [
     ("Director+", r"\b(director|vp|vice president|head of|chief)\b"),
     ("Manager", r"\bmanager\b"),
     ("Lead / Principal", r"\b(lead|principal|staff|architect)\b"),
-    ("Senior", r"\b(senior|sr\.?|iii|iv)\b"),
+    ("Senior", r"\b(s[eéê]nior|sr\.?|iii|iv)\b"),
     ("Intern", r"\b(intern|internship|trainee|apprentice|working student|werkstudent)\b"),
     ("Junior", r"\b(junior|jr\.?|entry[- ]level|graduate|associate|i)\b"),
     ("Mid", r"\b(mid|intermediate|ii)\b"),

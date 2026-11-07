@@ -136,10 +136,22 @@ _TESTER_OVERRIDE = re.compile(
 # LANGUAGE: linguistic review / proofreading jobs (they check wording, not software behaviour).
 LANGUAGE_EXCLUDE = _rx(r"\bproofread", r"\blinguist", r"\btranslat", r"\bsubtitl", r"\blanguage specialist\b",
                        r"\blqa\b", r"\blocali[sz]ation", r"\b(chinese|japanese|korean|spanish|french|german|italian|"
-                       r"portuguese|russian|turkish|polish|arabic|ukrainian|dutch|thai|vietnamese) (to|tester|qa)\b")
-# NOT QA: user-research participants, crowd-testing gig ads, risk / fraud "QA".
-OTHER_EXCLUDE = _rx(r"\b(user experience|ux|usability) (study )?tester\b", r"\bstudy tester\b",
-                    r"\btesters? wanted\b", r"\brisk\b", r"\bfraud\b", r"\bcommunity\b$")
+                       r"portuguese|russian|turkish|polish|arabic|ukrainian|dutch|thai|vietnamese|hindi|"
+                       r"bengali|urdu|sinhala|tamil|telugu|malay|indonesian|tagalog|filipino|swahili|greek|"
+                       r"hebrew|czech|romanian|hungarian|swedish|norwegian|danish|finnish) (to|tester|qa)\b",
+                       r"\blanguage expert\b")
+# NOT QA: user-research participants, crowd-testing gig ads, risk / fraud "QA", AI-training
+# gigs, and "QA" of claims, calls, documents and other office work.
+OTHER_EXCLUDE = _rx(r"\b(user experience|ux|usability|user) (study )?tester\b", r"\bstudy tester\b",
+                    r"\btesters? wanted\b", r"\brisk\b", r"\bfraud\b", r"\bcommunity\b$",
+                    r"\bpaid testing\b", r"\bpanelist\b", r"\bproduct tester\b", r"\bai agent tester\b",
+                    r"\b(ai|llm) (trainer|evaluat)", r"\btrainer\b", r"\btraining (specialist|executive)\b",
+                    r"\bllm evaluation\b", r"\bdata collection\b", r"\baudio quality\b",
+                    r"\bclaims?\b", r"\bexaminer\b", r"\bauditor\b", r"\bfile review\b", r"\bintake\b",
+                    r"\bwelfare\b", r"\bphysician\b", r"\bcontact cent(er|re)\b", r"\bcall cent(er|re)\b",
+                    r"\beditorial\b", r"\bcopy ?editor\b", r"\bdocument formatting\b", r"\bproduct selection\b",
+                    r"\bsuperintendent\b", r"\binvesting\b", r"\brelay testing\b", r"\bdata cent(er|re)\b",
+                    r"\bqa/q[cs]\b(?!.*\b(software|web|mobile|app)\b)", r"\bdesign quality assurance\b")
 
 # SOFT: non-QA job families. Only applies to ambiguous (medium) titles, so a real
 # "QA Engineer - Growth" or "SDET, Marketing Platform" is still kept.

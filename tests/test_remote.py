@@ -68,7 +68,8 @@ class TestLevel(unittest.TestCase):
     def test_senior_titles(self):
         for t in ["Senior QA Engineer", "Sr. SDET", "QA Lead", "Lead Software Test Engineer", "Principal SDET",
                   "Staff QA Automation Engineer", "QA Manager", "Head of QA", "Director of Quality Engineering",
-                  "Test Architect", "QA Engineer III"]:
+                  "Test Architect", "QA Engineer III", "ANALISTA DE QUALIDADE DE SOFTWARE (QA) SÊNIOR",
+                  "Analista de Testes QA Sênior"]:
             self.assertTrue(enrich.too_senior_title(t), t)
         for t in ["QA Engineer", "Junior QA Tester", "QA Intern", "Mid-level QA Automation Engineer", "SDET II",
                   "Software Tester", "Manual QA Engineer"]:
@@ -93,6 +94,21 @@ class TestExperienceParsing(unittest.TestCase):
         self.assertTrue(qa_match.title_candidate("iOS Engineer / XCUITest Automation"))
 
 
+class TestCompanyKey(unittest.TestCase):
+    def test_same_company_different_spelling(self):
+        from qa_scraper.store import company_key
+        for a, b in [("Veeva Systems", "Veeva"), ("CI&T", "ciandt (name unverified)"), ("Qu Pos, Inc.", "Qu"),
+                     ("pax8inc (name unverified)", "Pax8"), ("CACI International Inc", "caci (name unverified)")]:
+            self.assertEqual(company_key(a), company_key(b), (a, b))
+        self.assertNotEqual(company_key("Software Mind"), company_key("Mind"))
+
+    def test_software_qa_still_kept(self):
+        from qa_scraper.filters import qa_match
+        for t in ["Hybrid QA Engineer", "Salesforce QA Tester DHS Public Trust- Remote", "Tax Software QA & Support Analyst",
+                  "Strong Junior Manual QA (Agency team)", "QA Engineer - Game Development (Hard Rock Games)"]:
+            self.assertTrue(qa_match.title_candidate(t), t)
+
+
 class TestCountryAndScope(unittest.TestCase):
     def test_india_only_jobs_excluded(self):
         self.assertTrue(enrich.excluded_country("India", "", ["India"]))
@@ -104,5 +120,20 @@ class TestCountryAndScope(unittest.TestCase):
     def test_not_software_qa(self):
         from qa_scraper.filters import qa_match
         for t in ["User Experience Study Tester - OKX Crypto Exchange", "Usability Tester", "Risk (QA) Engineer",
-                  "App Testers wanted in Hawaii, USA!", "Freelance Game LQA Tester Chinese to English"]:
+                  "App Testers wanted in Hawaii, USA!", "Freelance Game LQA Tester Chinese to English",
+                  # found in run 14 (2026-11-07)
+                  "Casualty Claims QA Internal Auditor", "Default Claims VA QA Analyst, I",
+                  "Disability Claims QA Specialist", "QA Examiner/File Review Positions", "Child Welfare QA Analyst",
+                  "Commercial QA/QC Specialist", "Cx, QA, & Field, Controls Superintendent",
+                  "Editorial QA Specialist and Copy Editor (Spanish)", "Freelance Document Formatting QA Specialist",
+                  "Healthcare Intake Specialist /QA Specialist", "Intake QA Coordinator",
+                  "Home-Based Product Selection QA Specialist", "Life Contact Center Trainer & QA Analyst",
+                  "QA & Training Executive", "Physician Advisory Services QA Specialist",
+                  "Arabic Language Expert - QA Specialist", "Sinhala QA Analyst - Fully Remote",
+                  "Audio Quality Analyst - AI Trainer", "AI QA Trainer - LLM Evaluation",
+                  "AI Data QA & Training Specialist", "AI Agent Tester - Real-World Tasks",
+                  "Data & QA Analyst - Impact Investing", "Remote Product Tester & Research Panelist",
+                  "Paid Testing Opportunity: California Residents", "Robotics Data Collection Tester",
+                  "Relay Testing Professional", "QA/QS Engineer (m/w/d) Data Center", "Connect User Tester",
+                  "Design Quality Assurance (DQA) Co-op"]:
             self.assertFalse(qa_match.title_candidate(t), t)

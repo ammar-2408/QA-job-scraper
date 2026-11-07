@@ -72,7 +72,7 @@ Every run is also saved to the database (`data/jobs.db`, or Postgres when
 
 ## Sources
 
-Company job boards, listed in `data/boards.csv` (about 25,000 verified boards):
+Company job boards, listed in `data/boards.csv` (about 31,500 verified boards):
 
 | System | Public feed |
 |---|---|
@@ -93,7 +93,7 @@ Company job boards, listed in `data/boards.csv` (about 25,000 verified boards):
 | Manatal | `careers-page.com/api/v1.0/c/{slug}/jobs/` |
 | Pinpoint | `{slug}.pinpointhq.com/postings.json` |
 
-Open job sites: Himalayas (24 QA searches, the biggest source of matching jobs),
+Open job sites: Himalayas (36 QA searches, the biggest source of matching jobs),
 Arbeitnow, Jobicy, Remote OK, We Work Remotely, Remotive and Get on Board. These sites
 ask to be credited, so every job keeps its source and the original posting URL. If the
 same job is also on the company's own board, the company-board copy wins. Some open

@@ -208,13 +208,14 @@ async def finalize(db: DB, run_id: int, http=None, status: str = "done", error: 
             gone += [c["identity"] for c, g in zip(verify, flags) if g]
 
     day = today().isoformat()
-    await asyncio.to_thread(refilter, db)
 
     def write():
         with db.transaction() as tx:
             tx.many("UPDATE jobs SET duplicate=1 WHERE identity=?", [(i,) for i in written - final])
             tx.many("UPDATE jobs SET duplicate=0 WHERE identity=?", [(i,) for i in final])
             tx.many("UPDATE jobs SET status='closed', closed_on=? WHERE identity=?", [(day, i) for i in gone])
+        # After the run's own duplicate flags: today's rules and cross-source duplicates win.
+        refilter(db)
         new = db.one("SELECT COUNT(*) AS n FROM jobs WHERE first_run_id=? AND duplicate=0 AND category='kept'",
                      (run_id,))["n"]
         run = db.one("SELECT started_at FROM runs WHERE id=?", (run_id,)) or {}
@@ -271,6 +272,24 @@ def fails_rules(row: dict) -> str:
     return ""
 
 
+_COMPANY_SUFFIX = {"inc", "llc", "ltd", "limited", "corp", "corporation", "company", "co", "gmbh", "sa", "bv",
+                   "plc", "pte", "sdn", "bhd", "ag", "systems", "international", "technologies", "technology",
+                   "health", "group", "solutions", "cloud", "pos", "careers", "jobs", "hq", "the"}
+
+
+def company_key(name: str) -> str:
+    """Company name reduced so spellings from different sources match:
+    "Veeva Systems" / "Veeva", "CI&T" / "ciandt (name unverified)", "Qu Pos, Inc." / "Qu"."""
+    import re as _re
+    n = (name or "").lower().replace("(name unverified)", "").replace("&", "and")
+    words = [w for w in _re.split(r"[^a-z0-9]+", n) if w and w not in _COMPANY_SUFFIX]
+    key = "".join(words)
+    for tail in ("inc", "llc", "careers", "jobs"):
+        if key.endswith(tail) and len(key) > len(tail) + 2:
+            key = key[: -len(tail)]
+    return key or n.strip()
+
+
 def refilter(db: DB) -> int:
     """Hide stored jobs that fail today's rules (rules change; old rows stay in the database
     with category 'filtered' so nothing is lost and they come back if the rules relax)."""
@@ -287,7 +306,7 @@ def refilter(db: DB) -> int:
     for r in rows:
         if r["identity"] in hidden or (r["category"] == "filtered" and (r["identity"],) not in back):
             continue
-        groups.setdefault(f"{norm(r['company'])}|{norm(r['title'])}", []).append(r)
+        groups.setdefault(f"{company_key(r['company'])}|{norm(r['title'])}", []).append(r)
     dups, firsts = [], []
     for g in groups.values():
         g.sort(key=lambda r: (r["status"] != "open", r["trust"] != "company_ats", -(int((r["posted_date"] or "0").replace("-", "") or 0))))
