@@ -182,6 +182,18 @@ def seniority_from(title: str) -> str:
 SENIOR_LEVELS = ("Director+", "Manager", "Lead / Principal", "Senior")
 
 
+def excluded_country(country: str, location: str, excluded: list[str]) -> bool:
+    """True when the job is only open in an excluded country (e.g. India). Region-wide
+    lists of more than 3 countries are not excluded for containing one of them."""
+    if not excluded:
+        return False
+    places = [p.strip() for p in re.split(r"[;,|/]", f"{country}") if p.strip()]
+    many = len(places) > 3 or "more)" in (country or "")
+    text = f"{country} {location}"
+    hit = any(re.search(r"\b" + re.escape(c) + r"\b", text, _I) for c in excluded)
+    return hit and not many
+
+
 def too_senior_title(title: str) -> bool:
     return seniority_from(title) in SENIOR_LEVELS
 

@@ -71,7 +71,9 @@ QA_TITLES += [
 # 2026-11-07: testers only. Developer / test-tooling engineering and linguistic review are out.
 MOVED_OUT = ["Bulgarian Localization QA Tester / Proofreader", "Senior Engineering Manager, Test Systems & Tooling",
              "Software Engineer II, Backend (Test Infra)", "Software Engineer, Quality",
-             "Senior Software Engineer - Quality"]
+             "Senior Software Engineer - Quality",
+             # language testing, crowd-testing gig ads (user: software QA only)
+             "Localization QA Tester", "LQA Game Tester (Japanese) - Freelance Remote", "QA Testers wanted in Jordan!"]
 QA_TITLES = [t for t in QA_TITLES if t not in MOVED_OUT]
 NOT_QA_TITLES += MOVED_OUT + [
     "Backend Developer (QA mindset)", "Full Stack Engineer - QA Tooling", "Senior Software Engineer, Test Platform",

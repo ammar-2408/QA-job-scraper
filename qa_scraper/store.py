@@ -263,6 +263,8 @@ def fails_rules(row: dict) -> str:
         return "too senior"
     if config.REMOTE_ONLY and (row.get("remote_type") or "") != "Remote":
         return "not remote"
+    if enrich.excluded_country(row.get("country") or "", row.get("location") or "", config.EXCLUDE_COUNTRIES):
+        return "excluded country"
     years = enrich.min_years(enrich.experience_from(row.get("description") or ""))
     if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS:
         return "too many years"
@@ -272,13 +274,30 @@ def fails_rules(row: dict) -> str:
 def refilter(db: DB) -> int:
     """Hide stored jobs that fail today's rules (rules change; old rows stay in the database
     with category 'filtered' so nothing is lost and they come back if the rules relax)."""
-    rows = db.all("SELECT identity, title, remote_type, description, category FROM jobs "
-                  "WHERE category IN ('kept', 'undated', 'flagged', 'filtered')")
+    rows = db.all("SELECT identity, title, company, remote_type, country, location, description, category, "
+                  "trust, status, posted_date FROM jobs WHERE category IN ('kept', 'undated', 'flagged', 'filtered')")
     hide = [(r["identity"],) for r in rows if r["category"] != "filtered" and fails_rules(r)]
     back = [(r["identity"],) for r in rows if r["category"] == "filtered" and not fails_rules(r)]
+    # Duplicates among everything still visible: same company + title (remote) -> keep one,
+    # preferring an open, company-board copy with the newest date.
+    import re as _re
+    norm = lambda s: _re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
+    hidden = {h[0] for h in hide}
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        if r["identity"] in hidden or (r["category"] == "filtered" and (r["identity"],) not in back):
+            continue
+        groups.setdefault(f"{norm(r['company'])}|{norm(r['title'])}", []).append(r)
+    dups, firsts = [], []
+    for g in groups.values():
+        g.sort(key=lambda r: (r["status"] != "open", r["trust"] != "company_ats", -(int((r["posted_date"] or "0").replace("-", "") or 0))))
+        firsts.append((g[0]["identity"],))
+        dups += [(r["identity"],) for r in g[1:]]
     with db.transaction() as tx:
         tx.many("UPDATE jobs SET category='filtered' WHERE identity=?", hide)
         tx.many("UPDATE jobs SET category='kept' WHERE identity=?", back)
+        tx.many("UPDATE jobs SET duplicate=1 WHERE identity=?", dups)
+        tx.many("UPDATE jobs SET duplicate=0 WHERE identity=?", firsts)
     return len(hide)
 
 

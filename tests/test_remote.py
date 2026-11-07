@@ -91,3 +91,18 @@ class TestExperienceParsing(unittest.TestCase):
     def test_tool_title_is_a_tester(self):
         from qa_scraper.filters import qa_match
         self.assertTrue(qa_match.title_candidate("iOS Engineer / XCUITest Automation"))
+
+
+class TestCountryAndScope(unittest.TestCase):
+    def test_india_only_jobs_excluded(self):
+        self.assertTrue(enrich.excluded_country("India", "", ["India"]))
+        self.assertTrue(enrich.excluded_country("Bangladesh; India", "", ["India"]))
+        self.assertTrue(enrich.excluded_country("", "Bengaluru, India (Remote)", ["India"]))
+        self.assertFalse(enrich.excluded_country("Poland; Portugal", "", ["India"]))
+        self.assertFalse(enrich.excluded_country("Afghanistan; Albania; India; Pakistan; Spain", "", ["India"]))
+
+    def test_not_software_qa(self):
+        from qa_scraper.filters import qa_match
+        for t in ["User Experience Study Tester - OKX Crypto Exchange", "Usability Tester", "Risk (QA) Engineer",
+                  "App Testers wanted in Hawaii, USA!", "Freelance Game LQA Tester Chinese to English"]:
+            self.assertFalse(qa_match.title_candidate(t), t)

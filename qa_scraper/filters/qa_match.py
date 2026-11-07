@@ -134,7 +134,12 @@ _TESTER_OVERRIDE = re.compile(
     r"test automation|automation test(er|ing)?|quality assurance (engineer|analyst|tester)|"
     r"selenium|playwright|cypress|appium|xcuitest|espresso|webdriver ?io|detox|katalon)\b", _I)
 # LANGUAGE: linguistic review / proofreading jobs (they check wording, not software behaviour).
-LANGUAGE_EXCLUDE = _rx(r"\bproofread", r"\blinguist", r"\btranslat", r"\bsubtitl", r"\blanguage specialist\b")
+LANGUAGE_EXCLUDE = _rx(r"\bproofread", r"\blinguist", r"\btranslat", r"\bsubtitl", r"\blanguage specialist\b",
+                       r"\blqa\b", r"\blocali[sz]ation", r"\b(chinese|japanese|korean|spanish|french|german|italian|"
+                       r"portuguese|russian|turkish|polish|arabic|ukrainian|dutch|thai|vietnamese) (to|tester|qa)\b")
+# NOT QA: user-research participants, crowd-testing gig ads, risk / fraud "QA".
+OTHER_EXCLUDE = _rx(r"\b(user experience|ux|usability) (study )?tester\b", r"\bstudy tester\b",
+                    r"\btesters? wanted\b", r"\brisk\b", r"\bfraud\b", r"\bcommunity\b$")
 
 # SOFT: non-QA job families. Only applies to ambiguous (medium) titles, so a real
 # "QA Engineer - Growth" or "SDET, Marketing Platform" is still kept.
@@ -200,7 +205,7 @@ def title_candidate(title: str) -> str:
     """Cheap title-only check used BEFORE fetching descriptions.
     Returns 'strong', 'medium' or '' (not a candidate)."""
     t = title or ""
-    if ROLE_EXCLUDE.search(t) or LANGUAGE_EXCLUDE.search(t):
+    if ROLE_EXCLUDE.search(t) or LANGUAGE_EXCLUDE.search(t) or OTHER_EXCLUDE.search(t):
         return ""
     if DEV_EXCLUDE.search(t) and not _TESTER_OVERRIDE.search(t):
         return ""

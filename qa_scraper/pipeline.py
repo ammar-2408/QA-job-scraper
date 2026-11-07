@@ -108,6 +108,9 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     if config.REMOTE_ONLY and job.remote_type != "Remote" and not keep_all_titles:
         res.counts["not_remote"] += 1
         return
+    if enrich.excluded_country(job.country, job.location, config.EXCLUDE_COUNTRIES) and not keep_all_titles:
+        res.counts["excluded_country"] += 1
+        return
     years = enrich.min_years(job.experience)
     if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS and not keep_all_titles:
         res.counts["too_senior"] += 1

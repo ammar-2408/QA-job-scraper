@@ -35,5 +35,9 @@ REMOTE_ONLY = os.getenv("QA_REMOTE_ONLY", "1") != "0"
 EXCLUDE_SENIOR = os.getenv("QA_EXCLUDE_SENIOR", "1") != "0"
 MAX_EXPERIENCE_YEARS = int(os.getenv("QA_MAX_EXPERIENCE_YEARS", "5"))
 
+# Jobs only open in these countries are dropped. A job open in a long list of countries
+# (region-wide remote, more than 3) is kept even if the list includes one of them.
+EXCLUDE_COUNTRIES = [c.strip() for c in os.getenv("QA_EXCLUDE_COUNTRIES", "India").split(",") if c.strip()]
+
 # Hard cap on stored description length (Excel cell limit is 32,767).
 MAX_DESC = 30000
