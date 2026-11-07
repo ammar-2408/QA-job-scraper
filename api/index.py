@@ -33,6 +33,7 @@ from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from qa_scraper import batch  # noqa: E402
+from qa_scraper.config import REMOTE_ONLY  # noqa: E402
 from qa_scraper.db import DB  # noqa: E402
 
 STEP_SECONDS = float(os.getenv("STEP_SECONDS", "200"))
@@ -110,7 +111,9 @@ def jobs(scope: str = Query("open", pattern="^(open|closed|all)$")):
         where = {"open": "status='open'", "closed": "status='closed' AND closed_on >= ?",
                  "all": "(status='open' OR closed_on >= ?)"}[scope]
         params = () if scope == "open" else (cutoff,)
-        rows = d.all(f"SELECT {', '.join(LIST_COLS)} FROM jobs WHERE duplicate=0 AND {where} "
+        if REMOTE_ONLY:
+            where += " AND remote_type='Remote'"
+        rows = d.all(f"SELECT {', '.join(LIST_COLS)} FROM jobs WHERE duplicate=0 AND category != 'filtered' AND {where} "
                      f"ORDER BY posted_date DESC LIMIT 8000", params)
         for r in rows:
             if r["country"] and len(r["country"]) > 200:

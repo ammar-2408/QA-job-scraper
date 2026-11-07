@@ -68,6 +68,17 @@ QA_TITLES += [
     "Software Engineer, Quality", "Senior Software Engineer - Quality", "QA Engineer, Compliance",
     "Middle QA Automation Engineer (AQA)", "Senior Game Tester, Game Modes, Clash Royale",
 ]
+# 2026-11-07: testers only. Developer / test-tooling engineering and linguistic review are out.
+MOVED_OUT = ["Bulgarian Localization QA Tester / Proofreader", "Senior Engineering Manager, Test Systems & Tooling",
+             "Software Engineer II, Backend (Test Infra)", "Software Engineer, Quality",
+             "Senior Software Engineer - Quality"]
+QA_TITLES = [t for t in QA_TITLES if t not in MOVED_OUT]
+NOT_QA_TITLES += MOVED_OUT + [
+    "Backend Developer (QA mindset)", "Full Stack Engineer - QA Tooling", "Senior Software Engineer, Test Platform",
+    "Kazakh Localization QA Tester / Proofreader", "Freelance Subtitling Linguists for Kazakh",
+]
+QA_TITLES += ["Software Engineer in Test", "Software Developer in Test II", "Junior QA Automation Engineer",
+              "QA Engineer (Frontend)", "Test Automation Engineer - Backend APIs"]
 
 
 class TestQaMatch(unittest.TestCase):

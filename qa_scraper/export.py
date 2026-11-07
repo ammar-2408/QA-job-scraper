@@ -71,6 +71,8 @@ def write_all(res: RunResult, max_age: int, out_dir: Path | None = None) -> dict
         f"  not a QA title:            {res.counts['not_qa_title']}",
         f"  QA title but too old:      {res.counts['too_old']}",
         f"  rejected by description:   {res.counts['rejected_by_description']}",
+        f"  not fully remote:          {res.counts['not_remote']}",
+        f"  too senior (> {config.MAX_EXPERIENCE_YEARS} yrs):     {res.counts['too_senior']}",
         f"  flagged (legitimacy):      {res.counts['flagged']}",
         f"  QA but no posted date:     {res.counts['undated']}",
         f"  KEPT (before dedupe):      {res.counts['kept']}",

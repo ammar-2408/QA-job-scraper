@@ -38,7 +38,7 @@ _SENIORITY = [
     ("Mid", r"\b(mid|intermediate|ii)\b"),
 ]
 _EXPERIENCE = re.compile(
-    r"(\d{1,2})\s*(?:\+|plus)?\s*(?:(?:-|to|–)\s*(\d{1,2}))?\s*\+?\s*years?(?:'|’)?\s*(?:of\s+)?"
+    r"(?<![\d.])(\d{1,2})\s*(?:\+|plus)?\s*(?:(?:-|to|–)\s*(\d{1,2}))?\s*\+?\s*years?(?:'|’)?\s*(?:of\s+)?"
     r"(?:\w+\s+){0,4}?(?:experience|exp\b)", _I)
 _SALARY_TEXT = re.compile(
     r"(?:[$€£]|USD|EUR|GBP|CAD|AUD|PKR|INR|Rs\.?)\s?\d[\d,.]*\s?[kK]?"
@@ -141,8 +141,24 @@ def country_from(location: str, hint: str = "") -> str:
     return "; ".join(out)
 
 
+# Statements in a description that contradict a "Remote" label (the role needs office time).
+_NOT_REMOTE = re.compile(
+    r"\b((?<!remote or )(?<!remote/)hybrid (role|position|model|schedule|arrangement|setup|set-up|basis)"
+    r"|(work(ing)? arrangement|work model|workplace type|work type|location type)\s*:?\s*hybrid"
+    r"|(this|the) (role|position|job) is (a )?hybrid"
+    r"|\d\s*(\+\s*)?days? (a|per|each) week (in|at|from) (the |our )?(office|site|hq)"
+    r"|(in|at) (the |our )?office \d\s*(\+\s*)?days?"
+    r"|(on[- ]?site|in[- ]office|in[- ]person) (role|position|job|presence|requirement)"
+    r"|(this|the) (role|position|job) is (based )?(on[- ]?site|in[- ]office|in[- ]person)"
+    r"|not (a )?remote|no remote|remote work is not|commuting distance)\b", re.I)
+
+
 def remote_from(job: Job) -> str:
     if job.remote_type:
+        if job.remote_type == "Remote" and job.description:
+            m = _NOT_REMOTE.search(job.description)
+            if m:                                   # labelled remote, but the text says otherwise
+                return "Hybrid" if "hybrid" in m.group(0).lower() or "days" in m.group(0).lower() else "Onsite"
         return job.remote_type
     head = f"{job.title} {job.location}"
     for name, pat in _REMOTE:
@@ -163,11 +179,23 @@ def seniority_from(title: str) -> str:
     return ""
 
 
+SENIOR_LEVELS = ("Director+", "Manager", "Lead / Principal", "Senior")
+
+
+def too_senior_title(title: str) -> bool:
+    return seniority_from(title) in SENIOR_LEVELS
+
+
+def min_years(experience: str) -> int | None:
+    m = re.match(r"(\d+)", experience or "")
+    return int(m.group(1)) if m else None
+
+
 def experience_from(description: str) -> str:
     best = None
     for m in _EXPERIENCE.finditer(description or ""):
         lo, hi = int(m.group(1)), m.group(2)
-        if lo > 30:
+        if lo > 15:                 # "30+ years of experience" is about the company, not the job
             continue
         cand = f"{lo}-{int(hi)} years" if hi else f"{lo}+ years"
         if best is None:

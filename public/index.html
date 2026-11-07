@@ -175,7 +175,10 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
             <option value="closed">Closed (last 30 days)</option><option value="all">All</option></select>
         </label>
         <label>Country <select id="fCountry"><option value="">All</option></select></label>
-        <label>Work type <select id="fRemote"><option value="">All</option></select></label>
+        <label>Remote from
+          <select id="fRemote"><option value="">All remote jobs</option>
+            <option value="world">No country restriction listed</option></select>
+        </label>
         <label>Role type <select id="fRole"><option value="">All</option></select></label>
         <label>Seniority <select id="fSeniority"><option value="">All</option></select></label>
         <label>Tool <select id="fTool"><option value="">All</option></select></label>
@@ -324,7 +327,8 @@ const jobsTable = new Tabulator("#jobsTable", {
       formatter: (c) => badges(c.getData()) + esc(c.getValue()) },
     { title: "Company", field: "company", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
     { title: "Location", field: "location", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
-    { title: "Type", field: "remote_type", width: 90 },
+    { title: "Remote from", field: "country", minWidth: 130, widthGrow: 1,
+      formatter: (c) => c.getValue() ? esc(c.getValue()) : '<span class="muted">Not specified</span>' },
     { title: "Seniority", field: "seniority", width: 105 },
     { title: "Role", field: "role_type", width: 130, formatter: (c) => esc(c.getValue()) },
     { title: "Tools", field: "tools", minWidth: 120, widthGrow: 1, formatter: (c) => esc(c.getValue()) },
@@ -361,7 +365,8 @@ function jobFilter(r) {
   if (trust ? r.trust !== trust : r.category === "flagged") return false;
   const c = $("#fCountry").value;
   if (c && !(r._countries || []).includes(c)) return false;
-  const eq = [["#fRemote", "remote_type"], ["#fRole", "role_type"], ["#fSeniority", "seniority"], ["#fSource", "source"]];
+  if ($("#fRemote").value === "world" && (r._countries || []).some((x) => !/worldwide|anywhere|global/i.test(x))) return false;
+  const eq = [["#fRole", "role_type"], ["#fSeniority", "seniority"], ["#fSource", "source"]];
   for (const [sel, f] of eq) { const v = $(sel).value; if (v && (r[f] || "") !== v) return false; }
   const tool = $("#fTool").value;
   if (tool && !(r._tools || []).includes(tool)) return false;
@@ -397,7 +402,6 @@ async function loadJobs() {
     r._applied = applied[r.identity] || "";
   }
   fillSelect("#fCountry", counts(data.jobs, "_countries").slice(0, 150));
-  fillSelect("#fRemote", counts(data.jobs, "remote_type"));
   fillSelect("#fRole", counts(data.jobs, "role_type"));
   fillSelect("#fSeniority", counts(data.jobs, "seniority"));
   fillSelect("#fTool", counts(data.jobs, "_tools").slice(0, 80));
@@ -436,7 +440,7 @@ function exportRows() {
   return jobsTable.getData("active").map((r) => ({
     Status: r.status === "closed" ? "Closed" : (r.first_run_id === latestRunId ? "New" : "Open"),
     Applied: r._applied || "",
-    Title: r.title, Company: r.company, Location: r.location, Country: r.country, "Work type": r.remote_type,
+    Title: r.title, Company: r.company, Location: r.location, "Remote from": r.country || "Not specified",
     "Role type": r.role_type, Seniority: r.seniority, Experience: r.experience, Tools: r.tools, Salary: r.salary,
     "Posted date": r.posted_date, "Days old": r._days, "First seen": r.first_seen, Source: srcName(r.source),
     Trust: r.trust, "Trust notes": r.trust_reasons, "Job URL": r.job_url, "Apply URL": r.apply_url,

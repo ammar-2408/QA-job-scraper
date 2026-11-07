@@ -67,6 +67,17 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     prior_first_seen = res.store.first_seen(job.identity())
     res.store.record(job)               # every QA-titled job, whatever its age
     br.seen.append(job)
+    # Level: senior / lead / manager titles are out (cheap, before any detail request).
+    if config.EXCLUDE_SENIOR and enrich.too_senior_title(job.title) and not keep_all_titles:
+        res.counts["too_senior"] += 1
+        return
+    # Remote only: the source already says hybrid / on-site -> stop here (saves detail requests).
+    if config.REMOTE_ONLY and job.remote_type in ("Hybrid", "Onsite") and not keep_all_titles:
+        res.counts["not_remote"] += 1
+        return
+    # Open job sites re-date ("refresh") old postings: if we saw the job earlier, that date wins.
+    if job.source_kind == "aggregator" and prior_first_seen and job.posted_date and prior_first_seen < job.posted_date:
+        job.posted_date, job.date_source = prior_first_seen, "first_seen"
     freshness.stamp(job)
     if job.days_old is not None and job.days_old > max_age:
         res.counts["too_old"] += 1
@@ -92,9 +103,16 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     if not is_qa and not keep_all_titles:
         res.counts["rejected_by_description"] += 1
         return
-    br.qa_jobs += 1
     job.qa_match = why or "all titles mode"
     enrich.enrich(job)
+    if config.REMOTE_ONLY and job.remote_type != "Remote" and not keep_all_titles:
+        res.counts["not_remote"] += 1
+        return
+    years = enrich.min_years(job.experience)
+    if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS and not keep_all_titles:
+        res.counts["too_senior"] += 1
+        return
+    br.qa_jobs += 1
     legitimacy.assess(job)
     if not legitimacy.is_legit(job):
         job.category = "flagged"

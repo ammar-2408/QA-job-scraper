@@ -52,9 +52,6 @@ STRONG = _rx(
     r"\bquality engineer(ing)?\b(?=.*\b(software|qa|automation|test|web|mobile|platform|frontend|backend)\b)",
     r"\b(head|director|vp|chief) of (qa|quality assurance|quality engineering|testing|test)\b",
     r"\bqa/qc\b(?=.*\b(software|web|mobile|app)\b)",
-    # Test-infrastructure / test-tooling engineering (SDET-type work).
-    r"\btest (systems|infrastructure|infra|frameworks?|tooling|tools|platform)\b",
-    r"\b(software )?engineer(ing)?\s*[,\-–:]\s*quality\s*$",
 )
 
 # ── Title: ambiguous signals (need software context) ────────────────────────
@@ -123,6 +120,22 @@ ROLE_EXCLUDE = _rx(
     r"\bcustomer engineer\b", r"\bsolutions? engineer\b", r"\bsecurity (engineer|analyst)\b",
     r"\bcopywriter\b", r"\bdesigner\b", r"\bdata scientist\b", r"\bresearch scientist\b",
 )
+# DEVELOPER: building software is a different job from testing it. Dropped unless the
+# title itself says the job is testing ("Software Engineer in Test", "QA Engineer").
+DEV_EXCLUDE = _rx(
+    r"\bdevelopers?\b", r"\bprogrammer\b", r"\bsoftware engineer(ing)?\b", r"\bfull[- ]?stack\b",
+    r"\bback[- ]?end\b", r"\bfront[- ]?end\b", r"\bdevops\b", r"\bsite reliability\b", r"(?-i:\bSRE\b)",
+    r"\bdata engineer", r"\b(machine learning|ml|ai) engineer", r"\bplatform engineer", r"\binfrastructure\b",
+    r"\bfirmware\b", r"\bembedded engineer", r"\b(ios|android|mobile) engineer", r"\btooling\b",
+    r"\btest (systems|infra|frameworks?|tools|platform)\b", r"\breliability engineer\b",
+)
+_TESTER_OVERRIDE = re.compile(
+    r"\b(testers?|test engineer|test analyst|qa engineer|qa analyst|qa tester|qa automation|sdets?|in test|"
+    r"test automation|automation test(er|ing)?|quality assurance (engineer|analyst|tester)|"
+    r"selenium|playwright|cypress|appium|xcuitest|espresso|webdriver ?io|detox|katalon)\b", _I)
+# LANGUAGE: linguistic review / proofreading jobs (they check wording, not software behaviour).
+LANGUAGE_EXCLUDE = _rx(r"\bproofread", r"\blinguist", r"\btranslat", r"\bsubtitl", r"\blanguage specialist\b")
+
 # SOFT: non-QA job families. Only applies to ambiguous (medium) titles, so a real
 # "QA Engineer - Growth" or "SDET, Marketing Platform" is still kept.
 SOFT_EXCLUDE = _rx(
@@ -187,7 +200,9 @@ def title_candidate(title: str) -> str:
     """Cheap title-only check used BEFORE fetching descriptions.
     Returns 'strong', 'medium' or '' (not a candidate)."""
     t = title or ""
-    if ROLE_EXCLUDE.search(t):
+    if ROLE_EXCLUDE.search(t) or LANGUAGE_EXCLUDE.search(t):
+        return ""
+    if DEV_EXCLUDE.search(t) and not _TESTER_OVERRIDE.search(t):
         return ""
     if HARD_EXCLUDE.search(t) and not _SOFTWARE_OVERRIDE.search(t):
         return ""

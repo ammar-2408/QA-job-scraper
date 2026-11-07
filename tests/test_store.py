@@ -21,7 +21,7 @@ class FakeSource:
 
     async def list_jobs(self, http, board):
         return [Job(title=t, company="Acme", job_url=f"https://acme.test/{i}", source="fake",
-                    board=board.key, external_id=str(i), description=DESC)
+                    board=board.key, external_id=str(i), description=DESC, remote_type="Remote")
                 for i, t in enumerate(self.titles)]
 
 

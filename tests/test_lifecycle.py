@@ -23,7 +23,7 @@ class DatedSource:
             return None
         return [Job(title=t, company="Acme", job_url=f"https://acme.test/{board.token}/{t}", source=self.ATS,
                     board=board.key, external_id=t.replace(" ", "-"), description=DESC,
-                    posted_date=today().isoformat(), date_source="source")
+                    posted_date=today().isoformat(), date_source="source", remote_type="Remote")
                 for t in self.titles]
 
 

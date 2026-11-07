@@ -63,6 +63,8 @@ class Job:
         """Same role at the same company and place, posted on two sources."""
         def norm(s: str) -> str:
             return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
+        if self.remote_type == "Remote":     # one remote job posted per city is still one job
+            return f"{norm(self.company)}|{norm(self.title)}"
         return f"{norm(self.company)}|{norm(self.title)}|{norm(self.location)}"
 
     def as_row(self) -> dict:

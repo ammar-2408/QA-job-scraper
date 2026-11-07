@@ -208,6 +208,7 @@ async def finalize(db: DB, run_id: int, http=None, status: str = "done", error: 
             gone += [c["identity"] for c, g in zip(verify, flags) if g]
 
     day = today().isoformat()
+    await asyncio.to_thread(refilter, db)
 
     def write():
         with db.transaction() as tx:
@@ -252,6 +253,35 @@ def set_run_status(run_id: int, status: str, error: str = "") -> None:
     db.close()
 
 
+def fails_rules(row: dict) -> str:
+    """Why a stored job no longer passes the current rules ('' = still passes)."""
+    from . import config
+    from .filters import enrich, qa_match
+    if not qa_match.title_candidate(row.get("title") or ""):
+        return "not a tester title"
+    if config.EXCLUDE_SENIOR and enrich.too_senior_title(row.get("title") or ""):
+        return "too senior"
+    if config.REMOTE_ONLY and (row.get("remote_type") or "") != "Remote":
+        return "not remote"
+    years = enrich.min_years(enrich.experience_from(row.get("description") or ""))
+    if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS:
+        return "too many years"
+    return ""
+
+
+def refilter(db: DB) -> int:
+    """Hide stored jobs that fail today's rules (rules change; old rows stay in the database
+    with category 'filtered' so nothing is lost and they come back if the rules relax)."""
+    rows = db.all("SELECT identity, title, remote_type, description, category FROM jobs "
+                  "WHERE category IN ('kept', 'undated', 'flagged', 'filtered')")
+    hide = [(r["identity"],) for r in rows if r["category"] != "filtered" and fails_rules(r)]
+    back = [(r["identity"],) for r in rows if r["category"] == "filtered" and not fails_rules(r)]
+    with db.transaction() as tx:
+        tx.many("UPDATE jobs SET category='filtered' WHERE identity=?", hide)
+        tx.many("UPDATE jobs SET category='kept' WHERE identity=?", back)
+    return len(hide)
+
+
 def import_history(path) -> None:
     """Copy first-seen history from the old data/history.db into the current database."""
     import sqlite3
@@ -278,6 +308,10 @@ if __name__ == "__main__":
     elif cmd == "import-history":
         from . import config
         import_history(sys.argv[2] if len(sys.argv) > 2 else config.DATA_DIR / "history.db")
+    elif cmd == "refilter":
+        d = DB()
+        d.init_schema()
+        print(f"{refilter(d)} stored jobs hidden by the current rules")
     elif cmd == "init":
         d = DB()
         d.init_schema()
