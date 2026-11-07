@@ -260,14 +260,17 @@ def fails_rules(row: dict) -> str:
     from .filters import enrich, qa_match
     if not qa_match.title_candidate(row.get("title") or ""):
         return "not a tester title"
-    if config.EXCLUDE_SENIOR and enrich.too_senior_title(row.get("title") or ""):
+    # Senior roles and long experience demands are fine when the job has no country limit.
+    open_ = enrich.open_to(row.get("country") or "", row.get("location") or "", row.get("description") or "",
+                           config.APPLY_FROM, config.APPLY_FROM_REGIONS)
+    if config.EXCLUDE_SENIOR and enrich.too_senior_title(row.get("title") or "") and not open_:
         return "too senior"
     if config.REMOTE_ONLY and (row.get("remote_type") or "") != "Remote":
         return "not remote"
     if enrich.excluded_country(row.get("country") or "", row.get("location") or "", config.EXCLUDE_COUNTRIES):
         return "excluded country"
     years = enrich.min_years(enrich.experience_from(row.get("description") or ""))
-    if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS:
+    if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS and not open_:
         return "too many years"
     return ""
 

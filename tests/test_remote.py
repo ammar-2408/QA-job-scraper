@@ -209,3 +209,12 @@ class TestOpenToHome(unittest.TestCase):
 
     def test_rule_off(self):
         self.assertTrue(enrich.open_to("United States", "", "", "", []))
+
+
+class TestSeniorWhenOpen(unittest.TestCase):
+    def test_senior_kept_only_without_country_limit(self):
+        from qa_scraper.store import fails_rules
+        base = {"title": "Senior QA Engineer", "remote_type": "Remote", "description": "Playwright tests."}
+        self.assertEqual(fails_rules({**base, "country": "", "location": "Worldwide"}), "")
+        self.assertEqual(fails_rules({**base, "country": "", "location": "Remote"}), "")
+        self.assertEqual(fails_rules({**base, "country": "United States", "location": "United States"}), "too senior")

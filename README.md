@@ -12,7 +12,8 @@ passes every rule:
 - Fully remote. Hybrid, on-site and jobs that never clearly say remote are dropped. A
   "Remote" label is also dropped when the description says otherwise ("hybrid, 3 days in
   the office", "this role is on-site").
-- Intern, junior or mid level: senior, lead, staff, principal, manager and director titles
+- Intern, junior or mid level (any level when the job has no country limit): senior, lead,
+  staff, principal, manager and director titles
   are dropped, and so are jobs asking for more than 5 years of experience.
 - Outside India: jobs limited to India are dropped (jobs open in a long list of countries
   are kept).

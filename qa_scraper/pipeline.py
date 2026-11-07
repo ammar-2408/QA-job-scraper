@@ -67,8 +67,12 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     prior_first_seen = res.store.first_seen(job.identity())
     res.store.record(job)               # every QA-titled job, whatever its age
     br.seen.append(job)
-    # Level: senior / lead / manager titles are out (cheap, before any detail request).
-    if config.EXCLUDE_SENIOR and enrich.too_senior_title(job.title) and not keep_all_titles:
+    # Level: senior / lead / manager titles are out, unless the job has no country limit
+    # (open to applicants anywhere). When the source already names other countries we can
+    # decide now and skip the detail request.
+    senior = config.EXCLUDE_SENIOR and enrich.too_senior_title(job.title) and not keep_all_titles
+    if senior and job.country and not enrich.open_to(job.country, job.location, "", config.APPLY_FROM,
+                                                      config.APPLY_FROM_REGIONS):
         res.counts["too_senior"] += 1
         return
     # Remote only: the source already says hybrid / on-site -> stop here (saves detail requests).
@@ -111,11 +115,13 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
     if enrich.excluded_country(job.country, job.location, config.EXCLUDE_COUNTRIES) and not keep_all_titles:
         res.counts["excluded_country"] += 1
         return
-    if not keep_all_titles and not enrich.open_to(job.country, job.location, job.description,
-                                                  config.APPLY_FROM, config.APPLY_FROM_REGIONS):
+    open_ = keep_all_titles or enrich.open_to(job.country, job.location, job.description,
+                                              config.APPLY_FROM, config.APPLY_FROM_REGIONS)
+    if not open_:
         res.counts["not_open_to_home"] += 1      # kept; hidden by the website's "Who can apply" filter
     years = enrich.min_years(job.experience)
-    if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS and not keep_all_titles:
+    too_many = config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS
+    if (senior or too_many) and not keep_all_titles and not open_:
         res.counts["too_senior"] += 1
         return
     br.qa_jobs += 1
