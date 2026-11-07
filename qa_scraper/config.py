@@ -16,6 +16,7 @@ MAX_AGE_DAYS = int(os.getenv("QA_MAX_AGE_DAYS", "7"))
 REQUEST_TIMEOUT = float(os.getenv("QA_REQUEST_TIMEOUT", "30"))
 MAX_CONCURRENCY = int(os.getenv("QA_MAX_CONCURRENCY", "24"))   # requests in flight overall
 PER_HOST_CONCURRENCY = int(os.getenv("QA_PER_HOST", "4"))      # requests in flight per host
+BOARD_CONCURRENCY = int(os.getenv("QA_BOARDS_AT_ONCE", "150"))  # boards being processed at the same time
 RETRIES = int(os.getenv("QA_RETRIES", "3"))
 
 # Identify honestly as a scraper (no browser impersonation, no personal contact details).

@@ -236,8 +236,12 @@ async def run(boards: list[Board], max_age: int | None = None, keep_all_titles: 
     if not batch:
         await res.store.start(max_age, total)
     async with Http() as http:
-        pending = {asyncio.create_task(_scrape_board(http, b, max_age, res, keep_all_titles, progress))
-                   for b in boards}
+        gate = asyncio.Semaphore(config.BOARD_CONCURRENCY)    # boards in progress at once (memory)
+
+        async def gated(b):
+            async with gate:
+                await _scrape_board(http, b, max_age, res, keep_all_titles, progress)
+        pending = {asyncio.create_task(gated(b)) for b in boards}
         pending |= {asyncio.create_task(_scrape_feed(http, f, max_age, res, progress)) for f in feeds}
         while pending:
             wait = 5 if deadline is None else max(0.1, min(5, deadline - time.time()))

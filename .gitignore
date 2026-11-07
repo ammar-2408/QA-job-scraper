@@ -7,3 +7,4 @@ output/
 *.db
 .vscode/
 .idea/
+data/cc_cache/
