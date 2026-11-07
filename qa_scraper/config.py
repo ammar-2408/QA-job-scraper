@@ -10,13 +10,19 @@ OUTPUT_DIR = ROOT / os.getenv("QA_OUTPUT_DIR", "output")
 BOARDS_CSV = DATA_DIR / "boards.csv"
 
 # Only keep postings at most this many days old.
-MAX_AGE_DAYS = int(os.getenv("QA_MAX_AGE_DAYS", "7"))
+MAX_AGE_DAYS = int(os.getenv("QA_MAX_AGE_DAYS", "30"))
 
 # Network behaviour.
 REQUEST_TIMEOUT = float(os.getenv("QA_REQUEST_TIMEOUT", "30"))
-MAX_CONCURRENCY = int(os.getenv("QA_MAX_CONCURRENCY", "24"))   # requests in flight overall
+MAX_CONCURRENCY = int(os.getenv("QA_MAX_CONCURRENCY", "64"))   # requests in flight overall
 PER_HOST_CONCURRENCY = int(os.getenv("QA_PER_HOST", "4"))      # requests in flight per host
-BOARD_CONCURRENCY = int(os.getenv("QA_BOARDS_AT_ONCE", "150"))  # boards being processed at the same time
+BOARD_CONCURRENCY = int(os.getenv("QA_BOARDS_AT_ONCE", "300"))  # boards being processed at the same time
+# Shared API hosts serve thousands of boards each: big public APIs get a few more parallel
+# requests, hosts known to rate-limit get fewer. Everything else uses PER_HOST_CONCURRENCY.
+HOST_LIMITS = {
+    "boards-api.greenhouse.io": 10, "api.ashbyhq.com": 8, "api.lever.co": 6, "api.eu.lever.co": 4,
+    "api.smartrecruiters.com": 6, "api.rippling.com": 6, "apply.workable.com": 2, "www.careers-page.com": 1,
+}
 RETRIES = int(os.getenv("QA_RETRIES", "3"))
 
 # Identify honestly as a scraper (no browser impersonation, no personal contact details).

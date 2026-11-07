@@ -1,12 +1,17 @@
 """Himalayas public search API: https://himalayas.app/jobs/api/search?q=<term>&page=N (20 per page)."""
 from __future__ import annotations
 
+import asyncio
+
 from ..models import Job
 from ..text import html_to_text, iso_date
 
 NAME = "himalayas"
-QUERIES = ["qa", "quality assurance", "tester", "test automation", "sdet", "qa automation", "software test"]
-MAX_PAGES = 5
+QUERIES = ["qa", "quality assurance", "qa engineer", "qa analyst", "qa tester", "tester", "software tester",
+           "manual tester", "manual qa", "test automation", "automation tester", "qa automation", "sdet",
+           "test engineer", "software test", "quality engineer", "mobile qa", "api testing", "game tester",
+           "selenium", "playwright", "cypress", "appium", "performance testing"]
+MAX_PAGES = 20
 
 
 def _short(places: list[str], n: int = 4) -> str:
@@ -17,13 +22,14 @@ def _short(places: list[str], n: int = 4) -> str:
 
 async def fetch(http, max_age: int) -> list[Job] | None:
     seen: dict[str, Job] = {}
-    any_ok = False
-    for q in QUERIES:
+    ok = []
+
+    async def one_query(q: str) -> None:
         for page in range(1, MAX_PAGES + 1):
             data = await http.get_json("https://himalayas.app/jobs/api/search", params={"q": q, "page": page})
             if not data or "jobs" not in data:
                 break
-            any_ok = True
+            ok.append(True)
             for j in data["jobs"]:
                 guid = j.get("guid") or j.get("applicationLink") or ""
                 if not guid or guid in seen:
@@ -42,4 +48,6 @@ async def fetch(http, max_age: int) -> list[Job] | None:
                 )
             if len(data["jobs"]) < 20:
                 break
-    return list(seen.values()) if any_ok else None
+
+    await asyncio.gather(*(one_query(q) for q in QUERIES))     # the HTTP client caps requests per host
+    return list(seen.values()) if ok else None

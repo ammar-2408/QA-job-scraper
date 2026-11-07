@@ -10,6 +10,6 @@ original posting URL for every job.
 """
 from __future__ import annotations
 
-from . import arbeitnow, himalayas, jobicy, remoteok, remotive, weworkremotely
+from . import arbeitnow, getonboard, himalayas, jobicy, remoteok, remotive, weworkremotely
 
-FEEDS = {m.NAME: m for m in (remotive, remoteok, weworkremotely, himalayas, jobicy, arbeitnow)}
+FEEDS = {m.NAME: m for m in (remotive, remoteok, weworkremotely, himalayas, jobicy, arbeitnow, getonboard)}

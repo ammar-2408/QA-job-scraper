@@ -153,7 +153,7 @@ def search(q: str = Query(..., min_length=2, max_length=100)):
 # -- runs ----------------------------------------------------------------------------
 class RunRequest(BaseModel):
     mode: str = Field("full", pattern="^(full|quick|feeds)$")
-    max_age: int = Field(7, ge=1, le=60)
+    max_age: int = Field(30, ge=1, le=60)
     password: str | None = None
 
 

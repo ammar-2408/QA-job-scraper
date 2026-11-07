@@ -22,9 +22,14 @@ class Http:
             limits=httpx.Limits(max_connections=config.MAX_CONCURRENCY * 2),
         )
         self._global = asyncio.Semaphore(config.MAX_CONCURRENCY)
-        self._hosts: dict[str, asyncio.Semaphore] = defaultdict(
-            lambda: asyncio.Semaphore(config.PER_HOST_CONCURRENCY))
+        self._hosts: dict[str, asyncio.Semaphore] = {}
         self.errors: list[str] = []
+
+    def _host_sem(self, host: str) -> asyncio.Semaphore:
+        sem = self._hosts.get(host)
+        if sem is None:
+            sem = self._hosts[host] = asyncio.Semaphore(config.HOST_LIMITS.get(host, config.PER_HOST_CONCURRENCY))
+        return sem
 
     async def __aenter__(self):
         return self
@@ -36,7 +41,7 @@ class Http:
         host = urlparse(url).netloc
         for attempt in range(config.RETRIES):
             try:
-                async with self._global, self._hosts[host]:
+                async with self._global, self._host_sem(host):
                     r = await self.client.request(method, url, **kw)
                 if r.status_code == 429 or r.status_code >= 500:
                     wait = float(r.headers.get("Retry-After", 0) or 0) or (2 ** attempt + random.random())
