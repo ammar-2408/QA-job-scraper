@@ -177,7 +177,7 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
         <label>Country <select id="fCountry"><option value="">All</option></select></label>
         <label>Who can apply
           <select id="fRemote"><option value="home" selected id="optHome">Open to me (worldwide or my country)</option>
-            <option value="">All remote jobs, any country</option></select>
+            <option value="">All remote jobs, incl. limited to other countries</option></select>
         </label>
         <label>Role type <select id="fRole"><option value="">All</option></select></label>
         <label>Seniority <select id="fSeniority"><option value="">All</option></select></label>
@@ -327,8 +327,12 @@ const jobsTable = new Tabulator("#jobsTable", {
       formatter: (c) => badges(c.getData()) + esc(c.getValue()) },
     { title: "Company", field: "company", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
     { title: "Location", field: "location", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
-    { title: "Remote from", field: "country", minWidth: 130, widthGrow: 1,
-      formatter: (c) => c.getValue() ? esc(c.getValue()) : '<span class="muted">Not specified</span>' },
+    { title: "Remote, hires from", field: "country", minWidth: 130, widthGrow: 1,
+      formatter: (c) => {
+        const v = c.getValue() || "";
+        if (!v || /worldwide|anywhere/i.test(v)) return "Remote, worldwide";
+        return `<span title="Remote job; the employer hires people living in: ${esc(v)}">Remote, ${esc(v)}</span>`;
+      } },
     { title: "Seniority", field: "seniority", width: 105 },
     { title: "Role", field: "role_type", width: 130, formatter: (c) => esc(c.getValue()) },
     { title: "Tools", field: "tools", minWidth: 120, widthGrow: 1, formatter: (c) => esc(c.getValue()) },

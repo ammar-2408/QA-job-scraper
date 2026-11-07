@@ -16,13 +16,13 @@ passes every rule:
   are dropped, and so are jobs asking for more than 5 years of experience.
 - Outside India: jobs limited to India are dropped (jobs open in a long list of countries
   are kept).
-- Open to you: the website shows, by default, only remote jobs you can apply to from your
-  country (`QA_APPLY_FROM`, Pakistan by default): worldwide jobs, jobs that list Pakistan,
-  and jobs open to a region that contains it (Asia, APAC). A job that names no place counts
-  as open unless its description limits it ("US only", "must be authorized to work in the
-  US", "security clearance"). Jobs limited to other countries are still saved; pick "All
-  remote jobs, any country" under "Who can apply" to see them. Himalayas is searched with
-  its own "who can apply" filter.
+- Open to you: by default only remote jobs that someone living in your country can apply
+  to are shown (`QA_APPLY_FROM`, Pakistan by default), from employers anywhere in the
+  world: worldwide jobs, jobs that list Pakistan, and jobs open to a region that contains
+  it (Asia, APAC). A job that names no place counts as open unless its description limits
+  it ("US only", "must be authorized to work in the US", "security clearance"). Remote jobs
+  limited to other countries are still saved; "Who can apply" > "All remote jobs" shows
+  them. Himalayas is searched with its own "who can apply" filter.
 - Fresh: posted in the last 30 days by default.
 - Legitimate: company boards are trusted; open-site jobs need a company name, a real
   description and no scam signs (apply on Telegram or WhatsApp, personal Gmail, fees).

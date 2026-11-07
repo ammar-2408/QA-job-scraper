@@ -1,0 +1,219 @@
+# Employers that hire remote staff worldwide (or in Pakistan): their QA jobs are usually open to Pakistan.
+# Remote-first / hire-anywhere companies
+Automattic
+GitLab
+Toggl
+Doist
+Zapier
+Hotjar
+Canonical
+Wikimedia Foundation
+Mozilla
+DuckDuckGo
+Deel
+Remote
+Oyster
+Buffer
+Close
+Help Scout
+Ghost
+Discourse
+Sourcegraph
+PostHog
+Supabase
+Cal.com
+Airbyte
+n8n
+Hugging Face
+Mattermost
+Docker
+Grafana Labs
+Tailscale
+Fleet
+Plausible
+Kinsta
+Bitwarden
+Proton
+Brave
+10up
+Human Made
+Elastic
+Clevertech
+Toptal
+Turing
+Crossover
+X-Team
+Lemon.io
+Proxify
+Arc
+Scopic
+Andela
+Gun.io
+Hubstaff
+Sketch
+InVision
+Loom
+Webflow
+Vercel
+Netlify
+Prisma
+Strapi
+Directus
+Appwrite
+Nhost
+Chatwoot
+Rocket.Chat
+Jitsi
+Nextcloud
+OpenProject
+Odoo
+Wildlife Studios
+Kraken
+Binance
+OKX
+Bybit
+Bitget
+KuCoin
+Gate.io
+MEXC
+HTX
+Crypto.com
+Chainlink Labs
+Consensys
+Parity Technologies
+Status
+Tether
+Bitfinex
+Nexo
+Ledger
+Trust Wallet
+Animoca Brands
+Polygon Labs
+Near Foundation
+Solana Foundation
+Aptos Labs
+Mysten Labs
+Gnosis
+Uniswap Labs
+Aave
+MetaMask
+Chainalysis
+Alchemy
+Infura
+Fireblocks
+Paxos
+Circle
+Ripple
+Stellar Development Foundation
+Cardano Foundation
+IOHK
+Input Output
+Emurgo
+Ava Labs
+Dfinity
+Filecoin Foundation
+Protocol Labs
+Offchain Labs
+Optimism
+StarkWare
+Matter Labs
+zkSync
+Scroll
+Celestia
+Cosmos
+Interchain
+Osmosis
+dYdX
+1inch
+Immutable
+Sky Mavis
+Yuga Labs
+OpenSea
+Magic Eden
+Phantom
+Rainbow
+Zerion
+Dune
+Nansen
+Messari
+The Graph
+Edge & Node
+Lido
+EigenLayer
+Ankr
+QuickNode
+Moralis
+Thirdweb
+Coinbase
+Gemini
+Bitpanda
+Blockchain.com
+Exodus
+Wirex
+Revolut
+Wise
+Payoneer
+Upwork
+Fiverr
+Freelancer
+Hostinger
+Namecheap
+Automattic
+Canonical
+Xapo
+# Pakistani tech companies (remote roles in Pakistan are open to you)
+Arbisoft
+10Pearls
+Systems Limited
+NetSol Technologies
+Tkxel
+VentureDive
+Devsinc
+Contour Software
+Folio3
+Confiz
+Emumba
+Motive
+Careem
+Bykea
+SadaPay
+NayaPay
+Tajir
+Bazaar
+Zameen
+Securiti
+i2c
+Afiniti
+Techlogix
+Xavor
+Visionet
+Cubix
+Programmers Force
+Mindbridge
+Strategic Systems International
+Ebryx
+Datics
+Bitsol
+Gaditek
+Ninja Technologies
+Vention
+Educative
+Sastaticket
+Dastgyr
+Retailo
+Oladoc
+Marham
+Krispy
+Abacus
+Rolustech
+Codup
+Tintash
+Mobile Studio
+Kwanso
+Cogent Labs
+Teradata
+Trafficdesk
+Jazz
+Telenor
+Daraz
+Foodpanda
