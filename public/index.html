@@ -92,6 +92,11 @@ select, input[type=text], input[type=search], input[type=password] { border: 1px
 .tabulator-row.closed { opacity: .62; }
 .tabulator .tabulator-placeholder span { color: var(--muted) !important; }
 .title-cell { font-weight: 600; }
+.apply-btn { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 99px;
+  padding: 2px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.apply-btn:hover { border-color: var(--accent); color: var(--accent); }
+.apply-btn.on { background: var(--new-bg); color: var(--new); border-color: transparent; font-weight: 600; }
+.tabulator-row.applied .title-cell { opacity: .75; }
 
 /* detail drawer */
 .drawer-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
@@ -178,6 +183,10 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
         <label>Trust
           <select id="fTrust"><option value="">Trusted (default)</option><option value="company_ats">Company boards only</option>
             <option value="aggregator_verified">Open job sites only</option><option value="flagged">Flagged only</option></select>
+        </label>
+        <label>Applied
+          <select id="fApplied"><option value="">All</option><option value="no">Not applied yet</option>
+            <option value="yes">Applied only</option></select>
         </label>
         <label class="check"><input type="checkbox" id="fUndated"> Include undated</label>
       </div>
@@ -275,6 +284,22 @@ function daysOld(d) {
   return Math.max(0, n);
 }
 
+// ---------- applied (saved in this browser only, so each PC keeps its own list) ----------
+const applied = (() => {
+  try { return JSON.parse(store.get("appliedJobs") || "{}") || {}; } catch (e) { return {}; }
+})();
+function toggleApplied(id) {
+  if (applied[id]) delete applied[id]; else applied[id] = new Date().toISOString().slice(0, 10);
+  store.set("appliedJobs", JSON.stringify(applied));
+  const row = jobsTable.getRow(id);
+  if (row) { row.update({ _applied: applied[id] || "" }); row.reformat(); }
+  if ($("#fApplied").value) applyFilters();
+  return !!applied[id];
+}
+const appliedBtn = (id, date) => date
+  ? `<button class="apply-btn on" data-apply="${esc(id)}" title="Applied on ${esc(date)}. Click to undo.">&#10003; Applied</button>`
+  : `<button class="apply-btn" data-apply="${esc(id)}" title="Mark as applied (saved on this computer)">Mark applied</button>`;
+
 // ---------- jobs table ----------
 const badges = (r) => {
   let b = "";
@@ -288,8 +313,13 @@ const jobsTable = new Tabulator("#jobsTable", {
   layout: "fitColumns", height: "calc(100vh - 120px)", placeholder: "No jobs match these filters",
   index: "identity", pagination: false, renderVertical: "virtual",
   initialSort: [{ column: "posted_date", dir: "desc" }],
-  rowFormatter: (row) => row.getElement().classList.toggle("closed", row.getData().status === "closed"),
+  rowFormatter: (row) => {
+    row.getElement().classList.toggle("closed", row.getData().status === "closed");
+    row.getElement().classList.toggle("applied", !!row.getData()._applied);
+  },
   columns: [
+    { title: "Applied", field: "_applied", width: 118, headerSort: true, hozAlign: "center",
+      formatter: (c) => appliedBtn(c.getData().identity, c.getValue()) },
     { title: "Title", field: "title", minWidth: 240, widthGrow: 3, cssClass: "title-cell",
       formatter: (c) => badges(c.getData()) + esc(c.getValue()) },
     { title: "Company", field: "company", minWidth: 140, widthGrow: 2, formatter: (c) => esc(c.getValue()) },
@@ -310,7 +340,11 @@ const jobsTable = new Tabulator("#jobsTable", {
         aggregator_verified: "Job site", flagged: '<span class="fail">Flagged</span>' })[c.getValue()] || "" },
   ],
 });
-jobsTable.on("rowClick", (e, row) => openDrawer(row.getData().identity));
+jobsTable.on("rowClick", (e, row) => {
+  const b = e.target.closest("[data-apply]");
+  if (b) { toggleApplied(b.dataset.apply); return; }      // the Applied button, not the row
+  openDrawer(row.getData().identity);
+});
 jobsTable.on("dataFiltered", (f, rows) => {
   $("#count").textContent = `${rows.length.toLocaleString()} jobs shown`;
 });
@@ -331,6 +365,9 @@ function jobFilter(r) {
   for (const [sel, f] of eq) { const v = $(sel).value; if (v && (r[f] || "") !== v) return false; }
   const tool = $("#fTool").value;
   if (tool && !(r._tools || []).includes(tool)) return false;
+  const ap = $("#fApplied").value;
+  if (ap === "yes" && !r._applied) return false;
+  if (ap === "no" && r._applied) return false;
   if (searchTerm) {
     const quick = `${r.title} ${r.company} ${r.location} ${r.tools}`.toLowerCase().includes(searchTerm);
     if (!quick && !(searchIds && searchIds.has(r.identity))) return false;
@@ -357,6 +394,7 @@ async function loadJobs() {
     r._days = daysOld(r.posted_date);
     r._countries = (r.country || "").split(/;\s*/).map((s) => s.replace(/\s*\(\+\d+ more\)|\.\.\.$/g, "").trim()).filter(Boolean);
     r._tools = (r.tools || "").split(/[,;]\s*/).map((s) => s.trim()).filter(Boolean);
+    r._applied = applied[r.identity] || "";
   }
   fillSelect("#fCountry", counts(data.jobs, "_countries").slice(0, 150));
   fillSelect("#fRemote", counts(data.jobs, "remote_type"));
@@ -383,12 +421,12 @@ $("#q").addEventListener("input", () => {
     } catch (e) {}
   }, 350);
 });
-for (const id of ["#fAge", "#fStatus", "#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fTrust", "#fUndated"])
+for (const id of ["#fAge", "#fStatus", "#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fTrust", "#fUndated", "#fApplied"])
   $(id).addEventListener("change", applyFilters);
 $("#resetBtn").onclick = () => {
   $("#q").value = ""; searchTerm = ""; searchIds = null;
   $("#fAge").value = "7"; $("#fStatus").value = "open"; $("#fTrust").value = ""; $("#fUndated").checked = false;
-  for (const id of ["#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource"]) $(id).value = "";
+  for (const id of ["#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fApplied"]) $(id).value = "";
   jobsTable.setSort([{ column: "posted_date", dir: "desc" }]);
   applyFilters();
 };
@@ -397,6 +435,7 @@ $("#resetBtn").onclick = () => {
 function exportRows() {
   return jobsTable.getData("active").map((r) => ({
     Status: r.status === "closed" ? "Closed" : (r.first_run_id === latestRunId ? "New" : "Open"),
+    Applied: r._applied || "",
     Title: r.title, Company: r.company, Location: r.location, Country: r.country, "Work type": r.remote_type,
     "Role type": r.role_type, Seniority: r.seniority, Experience: r.experience, Tools: r.tools, Salary: r.salary,
     "Posted date": r.posted_date, "Days old": r._days, "First seen": r.first_seen, Source: srcName(r.source),
@@ -435,6 +474,7 @@ async function openDrawer(id) {
     <h2>${badges(j)}${esc(j.title)}</h2>
     <div class="co">${esc(j.company)}${j.location ? " &middot; " + esc(j.location) : ""}</div>
     <div class="actions">
+      <span id="drawerApplied">${appliedBtn(j.identity, applied[j.identity])}</span>
       ${j.job_url ? `<a class="btn primary" href="${esc(j.job_url)}" target="_blank" rel="noopener noreferrer">Open posting</a>` : ""}
       ${j.apply_url && j.apply_url !== j.job_url ? `<a class="btn" href="${esc(j.apply_url)}" target="_blank" rel="noopener noreferrer">Apply link</a>` : ""}
     </div>
@@ -457,6 +497,7 @@ async function openDrawer(id) {
     </dl>
     <div class="desc">${esc(j.description) || '<span class="muted">No description provided by the source.</span>'}</div>`;
   $("#drawerClose").onclick = closeDrawer;
+  $("#drawerApplied").onclick = () => { toggleApplied(j.identity); $("#drawerApplied").innerHTML = appliedBtn(j.identity, applied[j.identity]); };
 }
 function closeDrawer() { $("#drawer").classList.add("hidden"); $("#drawerBg").classList.add("hidden"); }
 $("#drawerBg").onclick = closeDrawer;
