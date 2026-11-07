@@ -14,9 +14,11 @@ NVIDIAExternalCareerSite.
 """
 from __future__ import annotations
 
+import asyncio
 import re
 
 from .. import config
+from ..filters import qa_match
 from ..models import Board, Job
 from ..text import html_to_text, iso_date, relative_date
 
@@ -36,15 +38,20 @@ async def list_jobs(http, board: Board) -> list[Job] | None:
         return None
     base = _base(board)
     seen: dict[str, Job] = {}
-    any_ok = False
-    for term in config.SEARCH_TERMS:
+    ok = []
+
+    async def one_term(term: str) -> None:
         for page in range(MAX_PAGES_PER_TERM):
             data = await http.post_json(f"{base}/jobs", {"appliedFacets": {}, "limit": PAGE,
                                                          "offset": page * PAGE, "searchText": term})
             if data is None:
                 break
-            any_ok = True
+            ok.append(True)
             postings = data.get("jobPostings") or []
+            # Results are ranked by relevance: a page without a single QA-looking title means
+            # the rest of this search is unrelated too.
+            if not any(qa_match.title_candidate(p.get("title") or "") for p in postings):
+                break
             for p in postings:
                 path = p.get("externalPath") or ""
                 if not path or path in seen:
@@ -62,7 +69,9 @@ async def list_jobs(http, board: Board) -> list[Job] | None:
                 )
             if len(postings) < PAGE:
                 break
-    return list(seen.values()) if any_ok else None
+
+    await asyncio.gather(*(one_term(t) for t in config.SEARCH_TERMS))   # per-host limit still applies
+    return list(seen.values()) if ok else None
 
 
 def _clean_loc(loc: str) -> str:

@@ -1,0 +1,116 @@
+# Companies that hire software testers often (testing services, crowd-testing, IT outsourcing
+# and nearshore software houses). Used by: python discover.py --seeds data/qa_heavy_seeds.txt
+QA Wolf | qawolf, qa-wolf
+Testlio | testlio
+Applause | applause
+Global App Testing | globalapptesting, global-app-testing
+Rainforest QA | rainforestqa, rainforest
+Test IO | testio, test-io
+Qualitest | qualitest, qualitestgroup
+a1qa | a1qa
+QA Mentor | qamentor
+TestFort | testfort
+QATestLab | qatestlab
+Abstracta | abstracta
+TestingXperts | testingxperts
+QASource | qasource
+Testlify | testlify
+Mabl | mabl
+Testim | testim
+Katalon | katalon
+BrowserStack | browserstack
+Sauce Labs | saucelabs
+LambdaTest | lambdatest
+Tricentis | tricentis
+SmartBear | smartbear
+Perfecto | perfecto
+Ubertesters | ubertesters
+Bugcrowd | bugcrowd
+Crowdtesting | crowdtesting
+Testbirds | testbirds
+EPAM Systems | epam, epamsystems
+Endava | endava
+SoftServe | softserve
+N-iX | n-ix, nix
+Intellias | intellias
+DataArt | dataart
+Globant | globant
+Luxoft | luxoft
+Ciklum | ciklum
+Sigma Software | sigmasoftware, sigma-software
+ELEKS | eleks
+Avenga | avenga
+Grid Dynamics | griddynamics
+Zartis | zartis
+Toptal | toptal
+Turing | turing
+Crossover | crossover
+Lemon.io | lemonio
+X-Team | xteam, x-team
+Andela | andela
+Sonatafy Technology | sonatafy
+Scalable Path | scalablepath
+Arc | arc
+Andersen | andersen, andersenlab
+Itransition | itransition
+ScienceSoft | sciencesoft
+Innowise | innowise
+Netguru | netguru
+STX Next | stxnext
+10Clouds | 10clouds
+Software Mind | softwaremind
+Future Processing | futureprocessing
+Spyrosoft | spyrosoft
+Sii | sii
+Capgemini Engineering | capgemini
+Ness Digital Engineering | ness
+Encora | encora
+Wizeline | wizeline
+Nearsure | nearsure
+BairesDev | bairesdev
+Distillery | distillery
+Ateliware | ateliware
+Bitso | bitso
+Jalasoft | jalasoft
+Belatrix | belatrix
+Hexacta | hexacta
+Accenture Song | accenture
+Thoughtworks | thoughtworks
+Vention | vention
+Devexperts | devexperts
+Sombra | sombra
+Akvelon | akvelon
+Coherent Solutions | coherentsolutions
+Exadel | exadel
+Altoros | altoros
+Itera | itera
+Miquido | miquido
+Polcode | polcode
+Dev.Pro | devpro, dev-pro
+Truelogic | truelogic
+Fluxon | fluxon
+Halborn | halborn
+Tether | tether
+Kraken | kraken
+Automattic | automattic
+GitLab | gitlab
+Zapier | zapier
+Doist | doist
+Hotjar | hotjar
+Toggl | toggl
+Remote | remote
+Deel | deel
+Oyster | oyster, oysterhr
+Canonical | canonical
+Wikimedia Foundation | wikimedia
+DuckDuckGo | duckduckgo
+Mozilla | mozilla
+Elastic | elastic
+Grafana Labs | grafanalabs
+HashiCorp | hashicorp
+Sourcegraph | sourcegraph
+Close | close
+Help Scout | helpscout
+Buffer | buffer
+Ghost | ghost
+Articulate | articulate
