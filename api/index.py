@@ -33,7 +33,7 @@ from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from qa_scraper import batch  # noqa: E402
-from qa_scraper.config import REMOTE_ONLY  # noqa: E402
+from qa_scraper.config import APPLY_FROM, REMOTE_ONLY  # noqa: E402
 from qa_scraper.db import DB  # noqa: E402
 
 STEP_SECONDS = float(os.getenv("STEP_SECONDS", "200"))
@@ -43,7 +43,7 @@ STALE_QUEUED = timedelta(minutes=5)
 STALE_FINISHING = timedelta(minutes=15)
 CLOSED_DAYS = 30                         # closed jobs stay visible this long
 
-LIST_COLS = ["identity", "title", "company", "location", "country", "remote_type", "salary", "posted_date",
+LIST_COLS = ["apply_ok", "identity", "title", "company", "location", "country", "remote_type", "salary", "posted_date",
              "date_source", "source", "source_kind", "board", "trust", "trust_reasons", "role_type", "seniority",
              "experience", "tools", "job_url", "apply_url", "company_url", "category", "first_seen", "last_seen",
              "first_run_id", "status", "closed_on"]
@@ -115,9 +115,12 @@ def jobs(scope: str = Query("open", pattern="^(open|closed|all)$")):
             where += " AND remote_type='Remote'"
         rows = d.all(f"SELECT {', '.join(LIST_COLS)} FROM jobs WHERE duplicate=0 AND category != 'filtered' AND {where} "
                      f"ORDER BY posted_date DESC LIMIT 8000", params)
+        home = APPLY_FROM.lower()
         for r in rows:
-            if r["country"] and len(r["country"]) > 200:
-                r["country"] = r["country"][:200] + "..."
+            places = [p for p in (r["country"] or "").split("; ") if p]
+            if len(places) > 4:          # long region lists: short cell, but say so when home is included
+                show = places[:3] + [p for p in places[3:] if p.lower() == home]
+                r["country"] = "; ".join(show) + f" (+{len(places) - len(show)} more)"
         latest = d.one("SELECT id FROM runs WHERE started_at IS NOT NULL ORDER BY id DESC LIMIT 1")
         return {"jobs": rows, "latest_run_id": latest["id"] if latest else None, "today": utc_today().isoformat()}
     finally:
@@ -166,7 +169,7 @@ ACTIVE = ("queued", "running", "finishing")
 
 @app.get("/api/config")
 def get_config():
-    return {"password_required": bool(os.getenv("RUN_PASSWORD")), "runner": RUNNER}
+    return {"password_required": bool(os.getenv("RUN_PASSWORD")), "runner": RUNNER, "apply_from": APPLY_FROM}
 
 
 @app.get("/api/runs/current")

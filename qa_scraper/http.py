@@ -13,6 +13,9 @@ import httpx
 from . import config
 
 
+LONG_BLOCK = 300        # seconds; a longer Retry-After means "come back later", not "slow down"
+
+
 class Http:
     def __init__(self):
         self.client = httpx.AsyncClient(
@@ -24,6 +27,9 @@ class Http:
         self._global = asyncio.Semaphore(config.MAX_CONCURRENCY)
         self._hosts: dict[str, asyncio.Semaphore] = {}
         self.errors: list[str] = []
+        # Hosts that asked us to stay away for a long time (429 with a long Retry-After, e.g.
+        # Workable's daily limit). We stop calling them for the rest of the run.
+        self.blocked: dict[str, float] = {}
 
     def _host_sem(self, host: str) -> asyncio.Semaphore:
         sem = self._hosts.get(host)
@@ -39,12 +45,22 @@ class Http:
 
     async def request(self, method: str, url: str, **kw) -> httpx.Response | None:
         host = urlparse(url).netloc
+        if host in self.blocked:
+            return None
         for attempt in range(config.RETRIES):
             try:
                 async with self._global, self._host_sem(host):
                     r = await self.client.request(method, url, **kw)
                 if r.status_code == 429 or r.status_code >= 500:
-                    wait = float(r.headers.get("Retry-After", 0) or 0) or (2 ** attempt + random.random())
+                    try:
+                        after = float(r.headers.get("Retry-After", 0) or 0)
+                    except ValueError:
+                        after = 0
+                    if r.status_code == 429 and after > LONG_BLOCK:
+                        self.blocked[host] = after
+                        self.errors.append(f"{host}: rate limit, asked to wait {int(after)}s; skipped for this run")
+                        return None
+                    wait = after or (2 ** attempt + random.random())
                     await asyncio.sleep(min(wait, 30))
                     continue
                 return r

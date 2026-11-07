@@ -47,7 +47,7 @@ class TestRemoteOnlyPipeline(unittest.TestCase):
             async def list_jobs(self, http, board):
                 mk = lambda t, rt, i: Job(title=t, company="Acme", job_url=f"https://acme.test/{i}", source="fakeremote",
                                           board=board.key, external_id=str(i), description=DESC, remote_type=rt,
-                                          location="Austin, TX", posted_date=today().isoformat(), date_source="source")
+                                          location="Remote", posted_date=today().isoformat(), date_source="source")
                 return [mk("QA Engineer", "Remote", 1), mk("SDET", "Hybrid", 2), mk("Test Automation Engineer", "", 3),
                         mk("QA Analyst", "Onsite", 4)]
         pipeline.sources.SOURCES["fakeremote"] = Src()
@@ -56,8 +56,9 @@ class TestRemoteOnlyPipeline(unittest.TestCase):
                                            verbose=False))
         finally:
             pipeline.sources.SOURCES.pop("fakeremote", None)
-        self.assertEqual([j.title for j in res.kept], ["QA Engineer"])
-        self.assertEqual(res.counts["not_remote"], 3)
+        # the unlabelled job's location says "Remote", so it counts as remote
+        self.assertEqual([j.title for j in res.kept], ["QA Engineer", "Test Automation Engineer"])
+        self.assertEqual(res.counts["not_remote"], 2)
 
 
 if __name__ == "__main__":
@@ -135,5 +136,76 @@ class TestCountryAndScope(unittest.TestCase):
                   "Data & QA Analyst - Impact Investing", "Remote Product Tester & Research Panelist",
                   "Paid Testing Opportunity: California Residents", "Robotics Data Collection Tester",
                   "Relay Testing Professional", "QA/QS Engineer (m/w/d) Data Center", "Connect User Tester",
-                  "Design Quality Assurance (DQA) Co-op"]:
+                  "Design Quality Assurance (DQA) Co-op",
+                  # run 17
+                  "AI Text Validation Specialist (German language)", "PMO / QA Documental (Remoto LATAM)",
+                  "Field Service Technician Coffee/Espresso"]:
             self.assertFalse(qa_match.title_candidate(t), t)
+
+
+class TestRateLimit(unittest.TestCase):
+    def test_long_retry_after_skips_host_for_the_run(self):
+        import asyncio
+        import httpx
+        from qa_scraper.http import Http
+        calls = []
+
+        def handler(request):
+            calls.append(str(request.url))
+            return httpx.Response(429, headers={"Retry-After": "61177"})
+
+        async def go():
+            async with Http() as h:
+                h.client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+                a = await h.get_json("https://apply.workable.com/api/v1/widget/accounts/a")
+                b = await h.get_json("https://apply.workable.com/api/v1/widget/accounts/b")
+                return a, b, h.blocked
+        a, b, blocked = asyncio.run(go())
+        self.assertIsNone(a)
+        self.assertIsNone(b)
+        self.assertEqual(len(calls), 1)
+        self.assertIn("apply.workable.com", blocked)
+
+
+class TestRemoteWording(unittest.TestCase):
+    def test_more_remote_statements(self):
+        from qa_scraper.models import Job
+        for d in ["This opportunity is 100% WFH. You will design test scripts.",
+                  "Work Arrangement: Remote  Engagement Type: Contract",
+                  "Job Location: Remote work is authorized. Must support US Eastern hours."]:
+            self.assertEqual(enrich.remote_from(Job(title="QA Engineer", company="X", job_url="u", source="s",
+                                                    location="Atlanta", description=d)), "Remote", d)
+        self.assertEqual(enrich.remote_from(Job(title="QA Engineer", company="X", job_url="u", source="s",
+                         location="Atlanta", description="Work Arrangement: Hybrid")), "Hybrid")
+
+
+class TestOpenToHome(unittest.TestCase):
+    R = ["Asia", "South Asia", "APAC"]
+
+    def ok(self, country="", location="", desc=""):
+        return enrich.open_to(country, location, desc, "Pakistan", self.R)
+
+    def test_worldwide_and_home(self):
+        self.assertTrue(self.ok("", "Worldwide"))
+        self.assertTrue(self.ok("", "Anywhere"))
+        self.assertTrue(self.ok("Pakistan", "Pakistan"))
+        self.assertTrue(self.ok("Afghanistan; Pakistan; Bangladesh", ""))
+        self.assertTrue(self.ok("", "Remote - APAC"))
+        self.assertFalse(self.ok("Philippines", "Anywhere in the Philippines, Philippines"))
+
+    def test_limited_to_other_countries(self):
+        self.assertFalse(self.ok("United States", "United States"))    # "United States only"
+        self.assertFalse(self.ok("Greece", "Greece"))                  # "Greece only"
+        self.assertFalse(self.ok("Canada", "Toronto"))
+        self.assertFalse(self.ok("Anguilla; Argentina; Brazil", ""))   # LATAM list
+        self.assertFalse(self.ok("", "USA Remote"))
+        self.assertFalse(self.ok("", "Zagreb"))
+
+    def test_no_place_named(self):
+        self.assertTrue(self.ok("", "Remote", "Join our distributed team. Write Playwright tests."))
+        self.assertFalse(self.ok("", "Remote", "You must be authorized to work in the United States."))
+        self.assertFalse(self.ok("", "Remote", "This role is US-only."))
+        self.assertFalse(self.ok("", "", "Candidates must reside in Canada."))
+
+    def test_rule_off(self):
+        self.assertTrue(enrich.open_to("United States", "", "", "", []))

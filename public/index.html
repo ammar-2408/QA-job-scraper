@@ -175,9 +175,9 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
             <option value="closed">Closed (last 30 days)</option><option value="all">All</option></select>
         </label>
         <label>Country <select id="fCountry"><option value="">All</option></select></label>
-        <label>Remote from
-          <select id="fRemote"><option value="">All remote jobs</option>
-            <option value="world">No country restriction listed</option></select>
+        <label>Who can apply
+          <select id="fRemote"><option value="home" selected id="optHome">Open to me (worldwide or my country)</option>
+            <option value="">All remote jobs, any country</option></select>
         </label>
         <label>Role type <select id="fRole"><option value="">All</option></select></label>
         <label>Seniority <select id="fSeniority"><option value="">All</option></select></label>
@@ -365,7 +365,7 @@ function jobFilter(r) {
   if (trust ? r.trust !== trust : r.category === "flagged") return false;
   const c = $("#fCountry").value;
   if (c && !(r._countries || []).includes(c)) return false;
-  if ($("#fRemote").value === "world" && (r._countries || []).some((x) => !/worldwide|anywhere|global/i.test(x))) return false;
+  if ($("#fRemote").value === "home" && !r.apply_ok) return false;
   const eq = [["#fRole", "role_type"], ["#fSeniority", "seniority"], ["#fSource", "source"]];
   for (const [sel, f] of eq) { const v = $(sel).value; if (v && (r[f] || "") !== v) return false; }
   const tool = $("#fTool").value;
@@ -430,7 +430,8 @@ for (const id of ["#fAge", "#fStatus", "#fCountry", "#fRemote", "#fRole", "#fSen
 $("#resetBtn").onclick = () => {
   $("#q").value = ""; searchTerm = ""; searchIds = null;
   $("#fAge").value = "30"; $("#fStatus").value = "open"; $("#fTrust").value = ""; $("#fUndated").checked = false;
-  for (const id of ["#fCountry", "#fRemote", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fApplied"]) $(id).value = "";
+  for (const id of ["#fCountry", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fApplied"]) $(id).value = "";
+  $("#fRemote").value = $("#optHome") ? "home" : "";
   jobsTable.setSort([{ column: "posted_date", dir: "desc" }]);
   applyFilters();
 };
@@ -706,6 +707,8 @@ document.querySelectorAll("nav button[data-tab]").forEach((b) => b.onclick = () 
 (async function init() {
   await Promise.all([jobsTable, boardsTable, runsTable].map((t) => new Promise((r) => t.initialized ? r() : t.on("tableBuilt", r))));
   try { config = await api("/api/config"); } catch (e) {}
+  if (config && config.apply_from) $("#optHome").textContent = `Open to ${config.apply_from} (or worldwide)`;
+  else { $("#optHome").remove(); $("#fRemote").value = ""; }
   try { await loadJobs(); } catch (e) { showMsg("Could not load jobs: " + e.message, true); }
   poll();
 })();

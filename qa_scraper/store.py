@@ -194,7 +194,7 @@ async def finalize(db: DB, run_id: int, http=None, status: str = "done", error: 
     if ok_boards:
         cands = await asyncio.to_thread(
             db.all, "SELECT identity, board, source, detail_url FROM jobs "
-                    "WHERE status='open' AND (last_run_id IS NULL OR last_run_id<?)", (run_id,))
+                    "WHERE status='open' AND category!='filtered' AND (last_run_id IS NULL OR last_run_id<?)", (run_id,))
         cands = [c for c in cands if c["board"] in ok_boards]
         verify = [c for c in cands if c["source"] in SEARCH_BASED]
         gone = [c["identity"] for c in cands if c["source"] not in SEARCH_BASED]
@@ -312,7 +312,12 @@ def refilter(db: DB) -> int:
         g.sort(key=lambda r: (r["status"] != "open", r["trust"] != "company_ats", -(int((r["posted_date"] or "0").replace("-", "") or 0))))
         firsts.append((g[0]["identity"],))
         dups += [(r["identity"],) for r in g[1:]]
+    from . import config
+    from .filters import enrich
+    apply = [(1 if enrich.open_to(r["country"] or "", r["location"] or "", r["description"] or "",
+                                  config.APPLY_FROM, config.APPLY_FROM_REGIONS) else 0, r["identity"]) for r in rows]
     with db.transaction() as tx:
+        tx.many("UPDATE jobs SET apply_ok=? WHERE identity=?", apply)
         tx.many("UPDATE jobs SET category='filtered' WHERE identity=?", hide)
         tx.many("UPDATE jobs SET category='kept' WHERE identity=?", back)
         tx.many("UPDATE jobs SET duplicate=1 WHERE identity=?", dups)

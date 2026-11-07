@@ -16,6 +16,13 @@ passes every rule:
   are dropped, and so are jobs asking for more than 5 years of experience.
 - Outside India: jobs limited to India are dropped (jobs open in a long list of countries
   are kept).
+- Open to you: the website shows, by default, only remote jobs you can apply to from your
+  country (`QA_APPLY_FROM`, Pakistan by default): worldwide jobs, jobs that list Pakistan,
+  and jobs open to a region that contains it (Asia, APAC). A job that names no place counts
+  as open unless its description limits it ("US only", "must be authorized to work in the
+  US", "security clearance"). Jobs limited to other countries are still saved; pick "All
+  remote jobs, any country" under "Who can apply" to see them. Himalayas is searched with
+  its own "who can apply" filter.
 - Fresh: posted in the last 30 days by default.
 - Legitimate: company boards are trusted; open-site jobs need a company name, a real
   description and no scam signs (apply on Telegram or WhatsApp, personal Gmail, fees).
@@ -145,6 +152,8 @@ labelled `<slug> (name unverified)`, so no job is shown under the wrong employer
 | `QA_EXCLUDE_SENIOR` | 1 | 0 keeps senior, lead and manager roles |
 | `QA_MAX_EXPERIENCE_YEARS` | 5 | drop jobs asking for more years than this |
 | `QA_EXCLUDE_COUNTRIES` | India | comma-separated |
+| `QA_APPLY_FROM` | Pakistan | country you apply from; empty shows every remote job |
+| `QA_APPLY_FROM_REGIONS` | Asia, South Asia, APAC, ... | regions that include that country |
 | `QA_MAX_CONCURRENCY` | 64 | requests in flight overall |
 | `QA_PER_HOST` | 4 | requests in flight per host (big APIs have their own limits in config.py) |
 | `QA_BOARDS_AT_ONCE` | 300 | boards processed at the same time |

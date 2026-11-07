@@ -136,9 +136,7 @@ def country_from(location: str, hint: str = "") -> str:
         if rx.search(loc):
             found.append(country)
     out = list(dict.fromkeys(f for f in found if f))
-    if len(out) > 8:     # e.g. "any country in Latin America": keep the cell readable
-        return "; ".join(out[:8]) + f" (+{len(out) - 8} more)"
-    return "; ".join(out)
+    return "; ".join(out)      # full list: the "can I apply from X" rule needs every country
 
 
 # Statements in a description that contradict a "Remote" label (the role needs office time).
@@ -165,7 +163,9 @@ def remote_from(job: Job) -> str:
         if re.search(pat, head, _I):
             return name
     # description: only trust explicit statements
-    m = re.search(r"\b(this (is a|role is|position is) (fully )?(remote|hybrid))\b|\b(fully remote|100% remote|remote[- ]first)\b",
+    m = re.search(r"\b(this (is a|role is|position is) (fully )?(remote|hybrid))\b|\b(fully remote|100% remote|remote[- ]first)\b"
+                  r"|\b100% (wfh|work from home)\b|\bwork arrangement:\s*(remote|hybrid)\b|\bremote work is authori[sz]ed\b"
+                  r"|\bnationwide remote\b",
                   job.description or "", _I)
     if m:
         return "Hybrid" if "hybrid" in m.group(0).lower() else "Remote"
@@ -192,6 +192,47 @@ def excluded_country(country: str, location: str, excluded: list[str]) -> bool:
     text = f"{country} {location}"
     hit = any(re.search(r"\b" + re.escape(c) + r"\b", text, _I) for c in excluded)
     return hit and not many
+
+
+_WORLDWIDE = re.compile(r"\b(worldwide|world[- ]wide|anywhere(?! in\b)|global(ly)?|any (country|location)|"
+                        r"work from anywhere|all countries|international)\b", _I)
+_JUST_REMOTE = re.compile(r"^\s*(\(?(fully |100% )?remote( job| position| role| work)?\)?|wfh|work from home|"
+                          r"telecommute|virtual|not specified)?\s*$", _I)
+# Description phrases that limit a remote job to certain places.
+_RESTRICTED = re.compile(
+    r"\b(us|u\.s\.?|usa|united states|canada|canadian|uk|united kingdom|eu|europe(an)?|latam|latin america|"
+    r"north america|americas|australia|new zealand|germany|brazil|mexico)[- ]?(only|based( only)?|residents?)\b"
+    r"|\bmust (be|reside|live)( located| based)? (in|within)\b"
+    r"|\b(authori[sz]ed|eligible|permitted|legally able) to work (in|within|for)\b"
+    r"|\b(work|employment) (authori[sz]ation|eligibility|permit) (in|for)\b"
+    r"|\bresidents? of (the )?(us|u\.s\.|usa|united states|canada|uk|united kingdom|eu|europe|australia)\b"
+    r"|\b(located|based|reside|living) in (the )?(us|u\.s\.|usa|united states|canada|uk|united kingdom|eu|"
+    r"european union|europe|latam|latin america|north america|australia|one of the following)\b"
+    r"|\bwithin the (us|u\.s\.|usa|united states|continental|contiguous|uk|eu|european union)\b"
+    r"|\b(us|u\.s\.) (citizen(ship)?|person|clearance)\b|\bsecurity clearance\b|\bpublic trust\b"
+    r"|\bvisa sponsorship is not\b|\bno visa sponsorship\b", _I)
+
+
+def open_to(country: str, location: str, description: str, home: str, regions: list[str]) -> bool:
+    """Can someone living in `home` apply to this remote job?
+
+    Yes when the job is worldwide, names `home`, or names a region that contains it
+    (Asia, APAC...). No when it lists other countries, cities or regions only. When it
+    names no place at all, yes unless the description limits it ("US only", "must be
+    authorized to work in the US", "security clearance")."""
+    if not home:
+        return True
+    places = f"{country or ''} | {location or ''}"
+    if re.search(r"\b" + re.escape(home) + r"\b", places, _I):
+        return True
+    if _WORLDWIDE.search(places) or any(re.search(r"\b" + re.escape(r) + r"\b", places, _I) for r in regions):
+        return True
+    if (country or "").strip() or not _JUST_REMOTE.match(location or ""):
+        return False                         # names somewhere else
+    desc = description or ""
+    if re.search(r"\b" + re.escape(home) + r"\b", desc, _I):
+        return True
+    return not _RESTRICTED.search(desc)
 
 
 def too_senior_title(title: str) -> bool:

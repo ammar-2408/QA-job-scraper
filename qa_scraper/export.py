@@ -74,6 +74,7 @@ def write_all(res: RunResult, max_age: int, out_dir: Path | None = None) -> dict
         f"  not fully remote:          {res.counts['not_remote']}",
         f"  too senior (> {config.MAX_EXPERIENCE_YEARS} yrs):     {res.counts['too_senior']}",
         f"  excluded country:          {res.counts['excluded_country']}",
+        f"  limited to other countries (kept, filtered on the website): {res.counts['not_open_to_home']}",
         f"  flagged (legitimacy):      {res.counts['flagged']}",
         f"  QA but no posted date:     {res.counts['undated']}",
         f"  KEPT (before dedupe):      {res.counts['kept']}",

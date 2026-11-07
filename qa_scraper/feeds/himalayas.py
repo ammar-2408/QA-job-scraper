@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 
+from .. import config
 from ..models import Job
 from ..text import html_to_text, iso_date
 
@@ -28,7 +29,10 @@ async def fetch(http, max_age: int) -> list[Job] | None:
 
     async def one_query(q: str) -> None:
         for page in range(1, MAX_PAGES + 1):
-            data = await http.get_json("https://himalayas.app/jobs/api/search", params={"q": q, "page": page})
+            params = {"q": q, "page": page}
+            if config.APPLY_FROM:           # Himalayas' own "who can apply" filter (worldwide jobs included)
+                params["country"] = config.APPLY_FROM
+            data = await http.get_json("https://himalayas.app/jobs/api/search", params=params)
             if not data or "jobs" not in data:
                 break
             ok.append(True)

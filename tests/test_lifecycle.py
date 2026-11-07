@@ -113,3 +113,30 @@ class TestLifecycle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NamedSource(DatedSource):
+    """Like DatedSource but the job's company is the board's company."""
+    async def list_jobs(self, http, board):
+        jobs = await super().list_jobs(http, board)
+        for j in jobs or []:
+            j.company = board.company
+        return jobs
+
+
+class TestCrossSourceDuplicates(unittest.TestCase):
+    setUp, tearDown = TestLifecycle.setUp, TestLifecycle.tearDown
+
+    def test_company_spellings_merged_after_run(self):
+        store = Store(self.path)
+        pipeline.sources.SOURCES["fakeats"] = NamedSource("fakeats", ["QA Engineer"])
+        try:
+            asyncio.run(pipeline.run([Board(company="Veeva Systems", ats="fakeats", token="a"),
+                                      Board(company="Veeva", ats="fakeats", token="b")],
+                                     max_age=7, verbose=False, store=store))
+        finally:
+            pipeline.sources.SOURCES.pop("fakeats", None)
+        s = Store(self.path)
+        visible = s.db.all("SELECT * FROM jobs WHERE duplicate=0 AND category='kept'")
+        s.close()
+        self.assertEqual(len(visible), 1)

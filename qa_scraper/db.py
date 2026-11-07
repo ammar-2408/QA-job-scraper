@@ -66,7 +66,7 @@ CREATE INDEX IF NOT EXISTS jobs_result_run ON jobs (result_run_id);
 
 # Columns added after the first release: (table, column, type). Added to older databases.
 _MIGRATIONS = [("runs", "next_index", "INTEGER DEFAULT 0"), ("runs", "step_size", "INTEGER DEFAULT 0"),
-               ("jobs", "result_run_id", "INTEGER")]
+               ("jobs", "result_run_id", "INTEGER"), ("jobs", "apply_ok", "INTEGER DEFAULT 1")]
 
 
 def database_url() -> str:
