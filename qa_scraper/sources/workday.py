@@ -25,6 +25,7 @@ from ..text import html_to_text, iso_date, relative_date
 ATS = "workday"
 PAGE = 20
 MAX_PAGES_PER_TERM = 5      # 100 results per search term is plenty for QA roles
+SMALL_BOARD = 60            # up to this many postings: list them all (3 pages) instead of 8 searches
 
 _RAW_LOC = re.compile(r"^[A-Z]{2}\s*-\s*[A-Z]{2,3}\s*-\s*(.+)$")   # "US - CA - San Diego" -> "San Diego"
 
@@ -40,38 +41,59 @@ async def list_jobs(http, board: Board) -> list[Job] | None:
     seen: dict[str, Job] = {}
     ok = []
 
+    def add(postings: list) -> None:
+        for p in postings:
+            path = p.get("externalPath") or ""
+            if not path or path in seen:
+                continue
+            seen[path] = Job(
+                title=(p.get("title") or "").strip(),
+                company=board.company,
+                job_url=f"https://{board.host}/{board.site}{path}",
+                source=ATS, board=board.key,
+                external_id=f"{board.token}{path}",
+                location=(p.get("locationsText") or "").strip(),
+                posted_date=relative_date(p.get("postedOn") or ""),
+                date_source="source",
+                detail_ref={"url": f"{base}{path}"},
+            )
+
+    async def page(term: str, n: int) -> list | None:
+        data = await http.post_json(f"{base}/jobs", {"appliedFacets": {}, "limit": PAGE,
+                                                     "offset": n * PAGE, "searchText": term})
+        if data is None:
+            return None
+        ok.append(True)
+        return data
+
+    # Small boards (most of them): list every posting, 1-3 requests.
+    first = await page("", 0)
+    if first is None:
+        return None
+    total = first.get("total") or 0
+    if total <= SMALL_BOARD:
+        add(first.get("jobPostings") or [])
+        rest = await asyncio.gather(*(page("", n) for n in range(1, -(-total // PAGE))))
+        for d in rest:
+            add((d or {}).get("jobPostings") or [])
+        return list(seen.values())
+
     async def one_term(term: str) -> None:
-        for page in range(MAX_PAGES_PER_TERM):
-            data = await http.post_json(f"{base}/jobs", {"appliedFacets": {}, "limit": PAGE,
-                                                         "offset": page * PAGE, "searchText": term})
+        for n in range(MAX_PAGES_PER_TERM):
+            data = await page(term, n)
             if data is None:
                 break
-            ok.append(True)
             postings = data.get("jobPostings") or []
             # Results are ranked by relevance: a page without a single QA-looking title means
             # the rest of this search is unrelated too.
             if not any(qa_match.title_candidate(p.get("title") or "") for p in postings):
                 break
-            for p in postings:
-                path = p.get("externalPath") or ""
-                if not path or path in seen:
-                    continue
-                seen[path] = Job(
-                    title=(p.get("title") or "").strip(),
-                    company=board.company,
-                    job_url=f"https://{board.host}/{board.site}{path}",
-                    source=ATS, board=board.key,
-                    external_id=f"{board.token}{path}",
-                    location=(p.get("locationsText") or "").strip(),
-                    posted_date=relative_date(p.get("postedOn") or ""),
-                    date_source="source",
-                    detail_ref={"url": f"{base}{path}"},
-                )
+            add(postings)
             if len(postings) < PAGE:
                 break
 
     await asyncio.gather(*(one_term(t) for t in config.SEARCH_TERMS))   # per-host limit still applies
-    return list(seen.values()) if ok else None
+    return list(seen.values())
 
 
 def _clean_loc(loc: str) -> str:

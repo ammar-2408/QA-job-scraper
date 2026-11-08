@@ -71,7 +71,8 @@ _RELATIVE = re.compile(r"(\d+)\+?\s*(day|days|hour|hours|week|weeks|month|months
 
 def relative_date(text: str) -> str:
     """'Posted Today' / 'Posted Yesterday' / 'Posted 3 Days Ago' -> YYYY-MM-DD.
-    '30+ Days Ago' is returned as 30 days back (it is definitely too old)."""
+    '30+ Days Ago' means more than 30, so it is returned as 31 days back: older than a 30-day
+    window, which saves a detail request per old job on Workday boards."""
     t = (text or "").lower()
     if not t:
         return ""
@@ -84,6 +85,8 @@ def relative_date(text: str) -> str:
     if not m:
         return ""
     n, unit = int(m.group(1)), m.group(2).lower()
+    if re.search(r"\d\s*\+", t):
+        n += 1
     days = n * {"day": 1, "week": 7, "month": 30}[unit.rstrip("s")] if not unit.startswith("hour") else 0
     return (d - timedelta(days=days)).isoformat()
 

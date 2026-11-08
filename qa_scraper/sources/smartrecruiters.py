@@ -26,32 +26,42 @@ def _location(loc: dict) -> tuple[str, str]:
 async def list_jobs(http, board: Board) -> list[Job] | None:
     base = API.format(token=board.token)
     seen: dict[str, Job] = {}
-    any_ok = False
+    # Most companies have under 100 postings: one unfiltered request lists them all. Only big
+    # boards need the keyword searches (8 terms x up to 3 pages).
+    first = await http.get_json(base, params={"limit": 100, "offset": 0})
+    if first is None:
+        return None
+    _add(first.get("content") or [], seen, board, base)
+    if (first.get("totalFound") or 0) <= 100:
+        return list(seen.values())
     for term in config.SEARCH_TERMS:
         for page in range(MAX_PAGES_PER_TERM):
             data = await http.get_json(base, params={"q": term, "limit": 100, "offset": page * 100})
             if data is None:
                 break
-            any_ok = True
             content = data.get("content") or []
-            for p in content:
-                pid = str(p.get("id") or "")
-                if not pid or pid in seen:
-                    continue
-                loc, remote = _location(p.get("location") or {})
-                seen[pid] = Job(
-                    title=(p.get("name") or "").strip(),
-                    company=((p.get("company") or {}).get("name") or board.company),
-                    job_url=f"https://jobs.smartrecruiters.com/{board.token}/{pid}",
-                    source=ATS, board=board.key, external_id=pid,
-                    location=loc, remote_type=remote,
-                    country=((p.get("location") or {}).get("country") or "").upper(),
-                    posted_date=iso_date(p.get("releasedDate")), date_source="source",
-                    detail_ref={"url": f"{base}/{pid}"},
-                )
+            _add(content, seen, board, base)
             if len(content) < 100:
                 break
-    return list(seen.values()) if any_ok else None
+    return list(seen.values())
+
+
+def _add(content: list, seen: dict, board: Board, base: str) -> None:
+    for p in content:
+        pid = str(p.get("id") or "")
+        if not pid or pid in seen:
+            continue
+        loc, remote = _location(p.get("location") or {})
+        seen[pid] = Job(
+            title=(p.get("name") or "").strip(),
+            company=((p.get("company") or {}).get("name") or board.company),
+            job_url=f"https://jobs.smartrecruiters.com/{board.token}/{pid}",
+            source=ATS, board=board.key, external_id=pid,
+            location=loc, remote_type=remote,
+            country=((p.get("location") or {}).get("country") or "").upper(),
+            posted_date=iso_date(p.get("releasedDate")), date_source="source",
+            detail_ref={"url": f"{base}/{pid}"},
+        )
 
 
 async def fill_detail(http, job: Job) -> None:
