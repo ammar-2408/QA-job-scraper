@@ -176,8 +176,8 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
         </label>
         <label>Country <select id="fCountry"><option value="">All</option></select></label>
         <label>Who can apply
-          <select id="fRemote"><option value="home" selected id="optHome">No country limit (worldwide)</option>
-            <option value="">All remote jobs, incl. limited to one country</option></select>
+          <select id="fRemote" autocomplete="off"><option value="" selected>All remote jobs</option>
+            <option value="home" id="optHome">No country limit (worldwide)</option></select>
         </label>
         <label>Role type <select id="fRole"><option value="">All</option></select></label>
         <label>Seniority <select id="fSeniority"><option value="">All</option></select></label>
@@ -413,8 +413,8 @@ async function loadJobs() {
   // "Who can apply" options show how many open jobs each choice gives.
   const open = data.jobs.filter((r) => r.status === "open");
   const home = $("#optHome"), all = $('#fRemote option[value=""]');
-  if (home) home.textContent = `No country limit (worldwide) - ${open.filter((r) => r.apply_ok).length} jobs`;
-  if (all) all.textContent = `All remote jobs, incl. limited to one country - ${open.length} jobs`;
+  if (home) home.textContent = `No country limit (${open.filter((r) => r.apply_ok).length})`;
+  if (all) all.textContent = `All remote jobs (${open.length})`;
   await jobsTable.replaceData(data.jobs);
   applyFilters();
 }
@@ -440,7 +440,7 @@ $("#resetBtn").onclick = () => {
   $("#q").value = ""; searchTerm = ""; searchIds = null;
   $("#fAge").value = "30"; $("#fStatus").value = "open"; $("#fTrust").value = ""; $("#fUndated").checked = false;
   for (const id of ["#fCountry", "#fRole", "#fSeniority", "#fTool", "#fSource", "#fApplied"]) $(id).value = "";
-  $("#fRemote").value = $("#optHome") ? "home" : "";
+  $("#fRemote").value = "";
   jobsTable.setSort([{ column: "posted_date", dir: "desc" }]);
   applyFilters();
 };
@@ -546,7 +546,7 @@ function renderRun(run, active) {
   $("#pTime").textContent = started ? (active ? "running for " : "took ") + fmtDur((end - Date.parse(started)) / 1000) +
     (!active && run.finished_at ? " · " + new Date(run.finished_at).toLocaleString() : "") : "";
   const st = (n, l) => `<div class="stat"><b>${(n ?? 0).toLocaleString()}</b><span>${l}</span></div>`;
-  $("#stats").innerHTML = st(run.kept, "fresh QA jobs") + st(run.new_jobs, "new this run") +
+  $("#stats").innerHTML = st(run.kept, "QA jobs found (incl. already listed)") + st(run.new_jobs, "new: added to the list") +
     st(run.closed_jobs, "closed this run") + st(run.jobs_seen, "postings read") + st(done, "sources checked") +
     st(run.boards_failed, "sources failed");
   if (run.status === "failed" && run.error) showMsg("Run failed: " + run.error, true);
