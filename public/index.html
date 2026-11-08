@@ -410,6 +410,11 @@ async function loadJobs() {
   fillSelect("#fSeniority", counts(data.jobs, "seniority"));
   fillSelect("#fTool", counts(data.jobs, "_tools").slice(0, 80));
   fillSelect("#fSource", counts(data.jobs, "source"), srcName);
+  // "Who can apply" options show how many open jobs each choice gives.
+  const open = data.jobs.filter((r) => r.status === "open");
+  const home = $("#optHome"), all = $('#fRemote option[value=""]');
+  if (home) home.textContent = `No country limit (worldwide) - ${open.filter((r) => r.apply_ok).length} jobs`;
+  if (all) all.textContent = `All remote jobs, incl. limited to one country - ${open.length} jobs`;
   await jobsTable.replaceData(data.jobs);
   applyFilters();
 }

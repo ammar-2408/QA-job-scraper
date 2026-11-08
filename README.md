@@ -75,6 +75,13 @@ python check_board.py feed himalayas   # test one job site
 python -m unittest discover tests      # run the tests
 ```
 
+Daily run on Windows: `daily_run.cmd` runs a full run and logs to `output/daily_run.log`.
+Schedule it once (18:00 Pakistan time is when Workable's daily limit has reset):
+
+```
+schtasks /Create /SC DAILY /ST 18:00 /TN "QA Job Scraper daily run" /TR "D:\QA-job-scraper\daily_run.cmd" /F
+```
+
 Every run is also saved to the database (`data/jobs.db`, or Postgres when
 `DATABASE_URL` is set), which is what the website reads.
 
