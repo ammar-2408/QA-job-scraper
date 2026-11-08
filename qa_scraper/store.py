@@ -269,6 +269,14 @@ def fails_rules(row: dict) -> str:
         return "not remote"
     if enrich.excluded_country(row.get("country") or "", row.get("location") or "", config.EXCLUDE_COUNTRIES):
         return "excluded country"
+    from .filters import legitimacy
+    text = f"{row.get('title') or ''}\n{row.get('description') or ''}"
+    for rx, why in legitimacy._SCAM:
+        # Only the paid-training funnel here: the other red flags have innocent readings on
+        # company boards (a money-transfer company, an app that integrates WhatsApp) and are
+        # judged when the job is scraped.
+        if why == "sells paid training" and rx.search(text):
+            return "red flag: " + why
     years = enrich.min_years(enrich.experience_from(row.get("description") or ""))
     if config.EXCLUDE_SENIOR and years is not None and years > config.MAX_EXPERIENCE_YEARS and not open_:
         return "too many years"
@@ -297,7 +305,7 @@ def refilter(db: DB) -> int:
     """Hide stored jobs that fail today's rules (rules change; old rows stay in the database
     with category 'filtered' so nothing is lost and they come back if the rules relax)."""
     rows = db.all("SELECT identity, title, company, remote_type, country, location, description, category, "
-                  "trust, status, posted_date FROM jobs WHERE category IN ('kept', 'undated', 'flagged', 'filtered')")
+                  "trust, status, posted_date, first_run_id FROM jobs WHERE category IN ('kept', 'undated', 'flagged', 'filtered')")
     hide = [(r["identity"],) for r in rows if r["category"] != "filtered" and fails_rules(r)]
     back = [(r["identity"],) for r in rows if r["category"] == "filtered" and not fails_rules(r)]
     # Duplicates among everything still visible: same company + title (remote) -> keep one,
@@ -310,10 +318,13 @@ def refilter(db: DB) -> int:
         if r["identity"] in hidden or (r["category"] == "filtered" and (r["identity"],) not in back):
             continue
         groups.setdefault(f"{company_key(r['company'])}|{norm(r['title'])}", []).append(r)
-    dups, firsts = [], []
+    dups, firsts, earlier = [], [], []
     for g in groups.values():
         g.sort(key=lambda r: (r["status"] != "open", r["trust"] != "company_ats", -(int((r["posted_date"] or "0").replace("-", "") or 0))))
         firsts.append((g[0]["identity"],))
+        runs = [r["first_run_id"] for r in g if r["first_run_id"]]
+        if runs and g[0]["first_run_id"] and min(runs) < g[0]["first_run_id"]:
+            earlier.append((min(runs), g[0]["identity"]))
         dups += [(r["identity"],) for r in g[1:]]
     from . import config
     from .filters import enrich
@@ -326,6 +337,7 @@ def refilter(db: DB) -> int:
         tx.many("UPDATE jobs SET category='kept' WHERE identity=?", back)
         tx.many("UPDATE jobs SET duplicate=1 WHERE identity=?", dups)
         tx.many("UPDATE jobs SET duplicate=0 WHERE identity=?", firsts)
+        tx.many("UPDATE jobs SET first_run_id=? WHERE identity=?", earlier)
     return len(hide)
 
 

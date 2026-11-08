@@ -30,6 +30,12 @@ SCAM_PATTERNS = [
     (r"\b(reshipping|re-shipping|package forwarding|parcel forwarding)\b", "reshipping scheme"),
     (r"\b(bank account|ssn|social security number|passport (copy|scan))\b.{0,40}\b(before|to apply|send)\b", "asks for sensitive data up front"),
     (r"\bmoney (transfer|mule)\b", "money transfer scheme"),
+    # Job ads that sell the poster's own paid training / "career services" (bootcamp funnels).
+    (r"\b(training|career[- ]development|career services?|bootcamp|mentorship)\b.{0,250}"
+     r"\b(associated fees|payment terms|refund (conditions|policy)|enrol(l)?ment fees?|program fees?)\b",
+     "sells paid training"),
+    (r"\b(paid|optional) (qa |it |software testing )?(training|program|bootcamp|course)\b.{0,80}"
+     r"\b(offered|provided|available) (separately )?by\b", "sells paid training"),
 ]
 _SCAM = [(re.compile(p, _I), why) for p, why in SCAM_PATTERNS]
 _FREE_MAIL = re.compile(r"[\w.+-]+@(gmail|yahoo|hotmail|outlook|aol|proton|protonmail|icloud|mail|yandex)\.(com|me|ru)\b", _I)
@@ -85,7 +91,7 @@ def assess(job: Job) -> None:
 
 
 COMPANY_BOARD_RED_FLAGS = ("contact via messaging app", "apply via personal email address",
-                           "reshipping scheme", "money transfer scheme")
+                           "reshipping scheme", "money transfer scheme", "sells paid training")
 
 
 def is_legit(job: Job) -> bool:

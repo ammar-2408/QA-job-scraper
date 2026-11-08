@@ -224,3 +224,34 @@ class TestSeniorWhenOpen(unittest.TestCase):
         self.assertEqual(fails_rules({**base, "country": "", "location": "Worldwide"}), "")
         self.assertEqual(fails_rules({**base, "country": "", "location": "Remote"}), "")
         self.assertEqual(fails_rules({**base, "country": "United States", "location": "United States"}), "too senior")
+
+
+
+class TestRun24Audit(unittest.TestCase):
+    ACE = ("Junior QA Tester. Execute manual test cases. There is no fee to apply. Candidates who may benefit "
+           "can independently explore optional QA training and career-development services offered separately "
+           "by Ace IT Careers. Any associated fees, services, payment terms, and refund conditions will be explained.")
+
+    def test_paid_training_ad_flagged(self):
+        from qa_scraper.filters import legitimacy
+        from qa_scraper.models import Job
+        from qa_scraper.store import fails_rules
+        j = Job(title="Junior QA Tester", company="Ace IT Careers", job_url="u", source="workable",
+                source_kind="company_ats", description=self.ACE)
+        legitimacy.assess(j)
+        self.assertEqual(j.trust, "flagged")
+        self.assertTrue(fails_rules({"title": "Junior QA Tester", "remote_type": "Remote", "country": "",
+                                     "location": "Remote", "description": self.ACE}).startswith("red flag"))
+        ok = Job(title="QA Engineer", company="X", job_url="u", source="greenhouse", source_kind="company_ats",
+                 description="We pay for your training and conferences. Write Playwright tests.")
+        legitimacy.assess(ok)
+        self.assertEqual(ok.trust, "company_ats")
+        perk = Job(title="QA Analyst", company="X", job_url="u", source="lever", source_kind="company_ats",
+                   description="Access to 11,000 training and development courses, tuition reimbursement.")
+        legitimacy.assess(perk)
+        self.assertEqual(perk.trust, "company_ats")
+
+    def test_developer_tester_hybrid_dropped(self):
+        from qa_scraper.filters import qa_match
+        self.assertFalse(qa_match.title_candidate("Junior Java Web Developer / Tester (Remote/Thessaloniki)"))
+        self.assertTrue(qa_match.title_candidate("Software Tester/ Junior IT Consultant"))

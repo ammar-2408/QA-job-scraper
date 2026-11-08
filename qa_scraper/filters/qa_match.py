@@ -153,7 +153,7 @@ OTHER_EXCLUDE = _rx(r"\b(user experience|ux|usability|user) (study )?tester\b", 
                     r"\bsuperintendent\b", r"\binvesting\b", r"\brelay testing\b", r"\bdata cent(er|re)\b",
                     r"\bqa/q[cs]\b(?!.*\b(software|web|mobile|app)\b)", r"\bdesign quality assurance\b",
                     r"\btext validation\b", r"\((\w+ )?language\)", r"\bdocumental\b", r"\bpmo\b",
-                    r"\bfield service\b", r"\bcoffee\b", r"\btechnician\b(?!.*\b(software|qa|game)\b)")
+                    r"\bfield service\b", r"\bdeveloper\s*/\s*tester\b", r"\bcoffee\b", r"\btechnician\b(?!.*\b(software|qa|game)\b)")
 
 # SOFT: non-QA job families. Only applies to ambiguous (medium) titles, so a real
 # "QA Engineer - Growth" or "SDET, Marketing Platform" is still kept.
