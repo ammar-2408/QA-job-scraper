@@ -116,7 +116,7 @@ async def _process_job(http, src, job: Job, max_age: int, res: RunResult, br: Bo
         res.counts["excluded_country"] += 1
         return
     open_ = keep_all_titles or enrich.open_to(job.country, job.location, job.description,
-                                              config.APPLY_FROM, config.APPLY_FROM_REGIONS)
+                                              config.APPLY_FROM, config.APPLY_FROM_REGIONS, job.title)
     if not open_:
         res.counts["not_open_to_home"] += 1      # kept; hidden by the website's "Who can apply" filter
     years = enrich.min_years(job.experience)

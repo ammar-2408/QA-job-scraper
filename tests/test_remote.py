@@ -207,6 +207,12 @@ class TestOpenToHome(unittest.TestCase):
         self.assertFalse(self.ok("", "Remote", "This role is US-only."))
         self.assertFalse(self.ok("", "", "Candidates must reside in Canada."))
 
+    def test_limit_in_title(self):
+        for t in ["Senior QA Engineer - US Remote", "Senior SDET, Back End [Remote-US]", "LATAM Senior QA Analyst"]:
+            self.assertFalse(enrich.open_to("", "Remote", "", "Pakistan", self.R, t), t)
+        self.assertTrue(enrich.open_to("", "Remote", "", "Pakistan", self.R, "QA Engineer (Remote)"))
+        self.assertTrue(enrich.open_to("", "Remote", "", "Pakistan", self.R, "QA Engineer - US Bank Project"))
+
     def test_rule_off(self):
         self.assertTrue(enrich.open_to("United States", "", "", "", []))
 

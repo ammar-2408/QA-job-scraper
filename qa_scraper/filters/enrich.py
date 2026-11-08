@@ -213,7 +213,14 @@ _RESTRICTED = re.compile(
     r"|\bvisa sponsorship is not\b|\bno visa sponsorship\b", _I)
 
 
-def open_to(country: str, location: str, description: str, home: str, regions: list[str]) -> bool:
+# A title that limits the job to a country or region: "US Remote", "[Remote-US]", "LATAM ...".
+_TITLE_LIMIT = re.compile(
+    r"\b(us|usa|u\.s\.?|uk|eu|latam|canada|emea|europe|americas|north america|australia|germany|brazil|mexico)"
+    r"[\s-]*(remote|only|based)\b|\bremote[\s,:(\[-]*(us|usa|u\.s\.?|uk|eu|latam|canada|emea|europe|americas|"
+    r"north america|australia|germany|brazil|mexico)\b|^\s*(latam|emea|us|uk|eu)\b", re.I)
+
+
+def open_to(country: str, location: str, description: str, home: str, regions: list[str], title: str = "") -> bool:
     """Can someone living in `home` apply to this remote job?
 
     Yes when the job is worldwide, names `home`, or names a region that contains it
@@ -223,6 +230,8 @@ def open_to(country: str, location: str, description: str, home: str, regions: l
     if not home:
         return True
     places = f"{country or ''} | {location or ''}"
+    if title and _TITLE_LIMIT.search(title) and not re.search(r"\b" + re.escape(home) + r"\b", places + title, _I):
+        return False
     if re.search(r"\b" + re.escape(home) + r"\b", places, _I):
         return True
     if _WORLDWIDE.search(places) or any(re.search(r"\b" + re.escape(r) + r"\b", places, _I) for r in regions):

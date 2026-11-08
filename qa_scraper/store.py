@@ -262,7 +262,7 @@ def fails_rules(row: dict) -> str:
         return "not a tester title"
     # Senior roles and long experience demands are fine when the job has no country limit.
     open_ = enrich.open_to(row.get("country") or "", row.get("location") or "", row.get("description") or "",
-                           config.APPLY_FROM, config.APPLY_FROM_REGIONS)
+                           config.APPLY_FROM, config.APPLY_FROM_REGIONS, row.get("title") or "")
     if config.EXCLUDE_SENIOR and enrich.too_senior_title(row.get("title") or "") and not open_:
         return "too senior"
     if config.REMOTE_ONLY and (row.get("remote_type") or "") != "Remote":
@@ -318,7 +318,8 @@ def refilter(db: DB) -> int:
     from . import config
     from .filters import enrich
     apply = [(1 if enrich.open_to(r["country"] or "", r["location"] or "", r["description"] or "",
-                                  config.APPLY_FROM, config.APPLY_FROM_REGIONS) else 0, r["identity"]) for r in rows]
+                                  config.APPLY_FROM, config.APPLY_FROM_REGIONS, r["title"] or "") else 0, r["identity"])
+             for r in rows]
     with db.transaction() as tx:
         tx.many("UPDATE jobs SET apply_ok=? WHERE identity=?", apply)
         tx.many("UPDATE jobs SET category='filtered' WHERE identity=?", hide)
