@@ -65,6 +65,9 @@ def main() -> int:
     if args.ats:
         wanted = {a.strip().lower() for a in args.ats.split(",")}
         boards = [b for b in boards if b.ats in wanted]
+    history = {r["key"]: (r["last_qa_date"], r["last_scanned"])
+               for r in store.db.all("SELECT key, last_qa_date, last_scanned FROM boards")}
+    boards = pipeline.daily_limited_first(boards, history)
     if args.limit:
         boards = boards[: args.limit]
     feeds = [] if (args.no_feeds or args.ats or args.limit) else list(FEEDS.values())

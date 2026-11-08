@@ -74,3 +74,15 @@ class TestBatch(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDailyLimitedOrder(unittest.TestCase):
+    def test_workable_early_and_interleaved(self):
+        from qa_scraper.models import Board
+        from qa_scraper.pipeline import daily_limited_first
+        boards = [Board(company=f"c{i}", ats="greenhouse", token=f"g{i}") for i in range(10)]
+        boards += [Board(company="w1", ats="workable", token="w1"), Board(company="w2", ats="workable", token="w2")]
+        hist = {"workable:w2": ("2026-11-01", "2026-11-07"), "workable:w1": (None, "2026-11-01")}
+        out = daily_limited_first(boards, hist)
+        self.assertEqual(len(out), 12)
+        self.assertEqual([b.token for b in out[:5]], ["w2", "g0", "g1", "g2", "w1"])   # QA history first

@@ -44,6 +44,29 @@ class RunResult:
     closed_jobs: int = 0
 
 
+# Systems with a daily request quota per client (Workable answers 429 with a ~17-hour
+# Retry-After once it is used up). Their boards go first so the quota is spent on them.
+DAILY_LIMITED = ("workable",)
+
+
+def daily_limited_first(boards: list[Board], history: dict | None = None) -> list[Board]:
+    """Boards of daily-limited systems first. With `history` (key -> (last_qa_date, last_scanned)),
+    those with QA jobs before come first, then the ones checked longest ago, so every board
+    gets its turn over a few days."""
+    limited = [b for b in boards if b.ats in DAILY_LIMITED]
+    rest = [b for b in boards if b.ats not in DAILY_LIMITED]
+    if history:
+        limited.sort(key=lambda b: (not (history.get(b.key) or (None,))[0],
+                                    (history.get(b.key) or (None, None))[1] or ""))
+    # Interleave (1 limited : 3 others) instead of a solid block: only a couple of requests per
+    # host run at once, so a block of limited boards would leave the other workers idle.
+    out, it = [], iter(rest)
+    for b in limited:
+        out.append(b)
+        out.extend(x for _, x in zip(range(3), it))
+    return out + list(it)
+
+
 def load_boards(path=None) -> list[Board]:
     path = path or config.BOARDS_CSV
     out = []

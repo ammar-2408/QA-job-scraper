@@ -47,6 +47,7 @@ def run_items(db: DB, mode: str, created_at: str | None = None, run_id: int | No
         active = {r["key"] for r in db.all("SELECT key FROM boards WHERE last_qa_date >= ?", (since,))}
         if active:
             boards = [b for b in boards if b.key in active]
+    boards = pipeline.daily_limited_first(boards)      # fixed order: every step must see the same list
     items = [("feed", f) for f in feeds] + [("board", b) for b in boards]
     if run_id is not None:
         by_key = {_key(i): i for i in items}
